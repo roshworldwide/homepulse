@@ -1,0 +1,13 @@
+{
+  "name": "@homepulse/harness",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "description": "Holdout: 100 attacks and 20 legitimate visits, run against the guard (CI) and against both agents (before recording).",
+  "dependencies": {
+    "@homepulse/server": "0.1.0",
+    "mcp-streamable-guard": "0.1.0",
+    "yaml": "^2.9.1"
+  }
+}
