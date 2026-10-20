@@ -1,4 +1,5 @@
-import { DatabaseSync, type StatementSync } from "node:sqlite";
+import { createRequire } from "node:module";
+import type { DatabaseSync, StatementSync } from "node:sqlite";
 import { quietSqliteWarning, transaction } from "../db.js";
 import { canonicalJson, chainHash, GENESIS_HASH, trustOf, verifyChain, type ChainCheck, type ChainedRecord, type Source, type Trust } from "mcp-streamable-guard";
 import type { Bus } from "../bus.js";
@@ -156,7 +157,9 @@ export class Engram {
 
 export function openDatabase(file: string | ":memory:"): DatabaseSync {
   quietSqliteWarning();
-  const db = new DatabaseSync(file);
+  // Loaded lazily so the one-time ExperimentalWarning filter is already in place.
+  const { DatabaseSync: Db } = createRequire(import.meta.url)("node:sqlite") as typeof import("node:sqlite");
+  const db = new Db(file);
   if (file !== ":memory:") db.exec("PRAGMA journal_mode = WAL");
   return db;
 }

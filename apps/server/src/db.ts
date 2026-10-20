@@ -26,3 +26,6 @@ export function quietSqliteWarning(): void {
     return (original as (...a: unknown[]) => void)(warning, ...rest);
   }) as typeof process.emitWarning;
 }
+
+// Install the filter as soon as this module loads, before node:sqlite is first imported.
+quietSqliteWarning();

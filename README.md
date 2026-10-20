@@ -113,8 +113,8 @@ Only measured numbers appear here.
 
 | | Median | p95 |
 | --- | --- | --- |
-| `decide()` alone | 0.001 ms | 0.002 ms |
-| Full check (Ed25519 verify, HMAC, SQLite reads, decide) | 0.48 ms | 0.74 ms |
+| `decide()` alone | 0.001 ms | 0.003 ms |
+| Full check (Ed25519 verify, HMAC, SQLite reads, decide) | 0.45 ms | 0.64 ms |
 
 ## Golden-path scenarios
 
