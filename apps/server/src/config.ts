@@ -97,7 +97,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, opts: { dataDir
     ringAccessToken: env.RING_ACCESS_TOKEN ?? "",
     ringDeviceId: env.RING_DEVICE_ID ?? "",
     demoMode: (env.DEMO_MODE ?? "false") === "true",
-    tz: env.TZ || "America/Los_Angeles",
+    tz: env.HOMEPULSE_TZ || env.TZ || "America/Los_Angeles",
     dataDir,
     approvalTimeoutMs: Number(env.APPROVAL_TIMEOUT_MS ?? 45_000),
     unlockMs: Number(env.UNLOCK_MS ?? 30_000),

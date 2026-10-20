@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS records (
   hash      TEXT NOT NULL UNIQUE
 );
 CREATE INDEX IF NOT EXISTS records_known ON records (t_known);
+CREATE INDEX IF NOT EXISTS records_kind_event ON records (kind, t_event);
 -- No UPDATE or DELETE on records anywhere in the code; corrections are new records.
 `;
 

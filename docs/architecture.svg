@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" width="1200" height="700" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5b6478"/></marker>
+    <marker id="g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1f9d8a"/></marker>
+    <style>
+      .box{fill:#ffffff;stroke:#c9d0dc;stroke-width:1.5}
+      .sim{fill:#f6f7fa;stroke:#c9d0dc;stroke-width:1.5;stroke-dasharray:6 4}
+      .real{fill:#ffffff;stroke:#1f9d8a;stroke-width:2}
+      .guard{fill:#fff8e8;stroke:#c98a00;stroke-width:2.5}
+      .t{font-size:15px;font-weight:700;fill:#141a26}
+      .s{font-size:12.5px;fill:#4a5366}
+      .h{font-size:12px;font-weight:700;letter-spacing:.08em;fill:#7a8396}
+      .ln{stroke:#5b6478;stroke-width:1.6;fill:none;marker-end:url(#a)}
+      .lg{stroke:#1f9d8a;stroke-width:2;fill:none;marker-end:url(#g)}
+    </style>
+  </defs>
+  <rect width="1200" height="700" fill="#ffffff"/>
+  <text x="30" y="34" class="h">INPUTS</text>
+  <text x="300" y="34" class="h">AGENTS</text>
+  <text x="560" y="34" class="h">HOMEPULSE MCP SERVER · 2025-11-25 · STREAMABLE HTTP</text>
+  <text x="980" y="34" class="h">EFFECTS</text>
+
+  <!-- Inputs -->
+  <rect x="30" y="52" width="220" height="70" rx="10" class="sim"/>
+  <text x="44" y="78" class="t">Alexa+ voice</text><text x="44" y="98" class="s">browser speech page</text><text x="44" y="114" class="s">simulated experience</text>
+  <rect x="30" y="136" width="220" height="70" rx="10" class="real"/>
+  <text x="44" y="162" class="t">Ring events</text><text x="44" y="182" class="s">Playground API (real) · webhook</text><text x="44" y="198" class="s">injector signs like Ring (simulated)</text>
+  <rect x="30" y="220" width="220" height="56" rx="10" class="sim"/>
+  <text x="44" y="246" class="t">Caregiver note</text><text x="44" y="266" class="s">stands in for a Bee recording</text>
+  <rect x="30" y="290" width="220" height="56" rx="10" class="sim"/>
+  <text x="44" y="316" class="t">Keypad at the door</text><text x="44" y="336" class="s">a device: anyone can type</text>
+
+  <!-- Agents -->
+  <rect x="290" y="52" width="230" height="110" rx="10" class="real"/>
+  <text x="304" y="78" class="t">HomePulse agent</text><text x="304" y="98" class="s">Bedrock Converse + MCP client</text><text x="304" y="114" class="s">agent token · ≤ 6 tool steps</text><text x="304" y="130" class="s">every call is a real MCP round trip</text>
+  <rect x="290" y="180" width="230" height="86" rx="10" class="sim"/>
+  <text x="304" y="206" class="t">Baseline: no HomePulse</text><text x="304" y="226" class="s">same model and prompt</text><text x="304" y="242" class="s">unlock wired to a second door</text>
+
+  <!-- Server -->
+  <rect x="560" y="52" width="380" height="460" rx="14" fill="#fbfcfe" stroke="#1f9d8a" stroke-width="2"/>
+  <rect x="580" y="72" width="340" height="96" rx="10" class="box"/>
+  <text x="594" y="96" class="t">Read and write tools</text>
+  <text x="594" y="116" class="s">get_home_status · get_door_events · describe_visitor</text>
+  <text x="594" y="132" class="s">explain_decision · propose_rule · confirm_rule</text>
+  <text x="594" y="148" class="s">notify_household · set_lockdown</text>
+  <text x="594" y="162" class="s" fill="#c98a00">Ring / visitor results wrapped: trust: untrusted</text>
+
+  <rect x="580" y="182" width="340" height="56" rx="10" class="box"/>
+  <text x="594" y="206" class="t">Physical tools</text><text x="594" y="226" class="s">unlock_front_door · open_parcel_box (structured fields only)</text>
+
+  <rect x="580" y="252" width="340" height="132" rx="10" class="guard"/>
+  <text x="594" y="276" class="t">Axiom guard</text>
+  <text x="594" y="296" class="s">14 inputs read from server state, never agent words</text>
+  <text x="594" y="316" class="s">passPath: signed pass + code (+ night rule)</text>
+  <text x="594" y="334" class="s">ownerPath: fresh tap from an owner-role session</text>
+  <text x="594" y="352" class="s">gates: visitor at door · not lockdown · rate</text>
+  <text x="594" y="372" class="s" font-weight="700">all 16,384 combinations tested · 277 allow</text>
+
+  <rect x="580" y="398" width="160" height="96" rx="10" class="real"/>
+  <text x="594" y="422" class="t">Engram</text><text x="594" y="442" class="s">SQLite, append-only</text><text x="594" y="458" class="s">hash chain</text><text x="594" y="474" class="s">t_event + t_known</text>
+  <rect x="760" y="398" width="160" height="96" rx="10" class="real"/>
+  <text x="774" y="422" class="t">Passes</text><text x="774" y="442" class="s">Ed25519-signed</text><text x="774" y="458" class="s">HMAC code hash</text><text x="774" y="474" class="s">one use, atomic</text>
+
+  <!-- Bedrock -->
+  <rect x="290" y="300" width="230" height="86" rx="10" class="real"/>
+  <text x="304" y="326" class="t">Amazon Bedrock</text><text x="304" y="346" class="s">vision: emit_visitor (forced)</text><text x="304" y="362" class="s">rules: emit_rule (forced)</text><text x="304" y="378" class="s">output = data, never a guard input</text>
+
+  <!-- Phones -->
+  <rect x="290" y="420" width="230" height="92" rx="10" class="sim"/>
+  <text x="304" y="446" class="t">Homeowner / caregiver phones</text><text x="304" y="466" class="s">MCP sessions with elicitation</text><text x="304" y="482" class="s">Approve / Deny · Confirm rule</text><text x="304" y="498" class="s">code shown once, here only</text>
+
+  <!-- Effects -->
+  <rect x="980" y="182" width="190" height="66" rx="10" class="sim"/>
+  <text x="994" y="208" class="t">Front door lock</text><text x="994" y="228" class="s">simulated · relocks in 30 s</text>
+  <rect x="980" y="262" width="190" height="56" rx="10" class="sim"/>
+  <text x="994" y="288" class="t">Parcel box</text><text x="994" y="306" class="s">simulated</text>
+  <rect x="980" y="72" width="190" height="96" rx="10" class="sim"/>
+  <text x="994" y="98" class="t">Fire TV-style card</text><text x="994" y="118" class="s">spoken announcement</text><text x="994" y="134" class="s">caregiver alert</text><text x="994" y="150" class="s">all simulated</text>
+  <rect x="980" y="332" width="190" height="56" rx="10" class="sim"/>
+  <text x="994" y="358" class="t">Baseline door</text><text x="994" y="376" class="s">simulated · no guard</text>
+  <rect x="980" y="398" width="190" height="96" rx="10" class="box"/>
+  <text x="994" y="422" class="t">Console</text><text x="994" y="442" class="s">decision card · timeline</text><text x="994" y="458" class="s">what-if · Why?</text><text x="994" y="474" class="s">Server-Sent Events</text>
+
+  <!-- Arrows -->
+  <path d="M250 87 H290" class="ln"/>
+  <path d="M250 171 C270 171 270 120 290 120" class="ln"/>
+  <path d="M520 100 H580" class="lg"/>
+  <path d="M250 240 C270 240 270 171 290 171 H540 C560 171 560 152 578 152" class="ln"/>
+  <path d="M520 320 C548 320 548 140 578 140" class="ln"/>
+  <path d="M250 330 C268 330 268 548 290 548 H750 V388" class="ln"/>
+  <path d="M520 466 C548 466 548 330 578 330" class="ln"/>
+  <path d="M750 238 V250" class="ln"/>
+  <path d="M660 384 V396" class="ln"/>
+  <path d="M920 300 C950 300 950 215 978 215" class="lg"/>
+  <path d="M920 300 C950 300 950 290 978 290" class="lg"/>
+  <path d="M920 120 H978" class="ln"/>
+  <path d="M940 446 H978" class="ln"/>
+  <path d="M520 250 H540 V530 H960 V362 H976" class="ln" stroke-dasharray="5 4"/>
+  <text x="296" y="542" class="s" fill="#7a8396">keypad: a device, straight to the guard</text>
+
+  <text x="30" y="560" class="h">LEGEND</text>
+  <rect x="30" y="574" width="34" height="18" rx="4" class="real"/><text x="72" y="588" class="s">Real (runs for real in the demo)</text>
+  <rect x="30" y="602" width="34" height="18" rx="4" class="sim"/><text x="72" y="616" class="s">Simulated, and labelled as simulated in the app, README and video</text>
+  <rect x="30" y="630" width="34" height="18" rx="4" class="guard"/><text x="72" y="644" class="s">The only path to a physical effect</text>
+  <text x="560" y="560" class="s">Read left to right: inputs reach the agent, every tool call enters the MCP server,</text>
+  <text x="560" y="578" class="s">and physical calls pass the guard before any effect. Text from outside the home can</text>
+  <text x="560" y="596" class="s">never satisfy either credential path; it is data, and the decision card says so.</text>
+  <text x="560" y="626" class="s">Dashed line: the baseline's unlock goes straight to its own simulated door.</text>
+  <text x="560" y="644" class="s">Bedrock output reaches tools as untrusted data; it never sets a guard input.</text>
+</svg>

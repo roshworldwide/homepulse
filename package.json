@@ -28,7 +28,8 @@
     "holdout:generate": "tsx --conditions=homepulse-source harness/generate.ts",
     "demo": "tsx --conditions=homepulse-source apps/server/src/demo/cli.ts",
     "demo:record": "tsx --conditions=homepulse-source apps/server/src/demo/cli.ts --record",
-    "build": "npm run build -w mcp-streamable-guard && npm run build -w @homepulse/console"
+    "build": "npm run build -w mcp-streamable-guard && npm run build -w @homepulse/console",
+    "bench:guard": "tsx --conditions=homepulse-source apps/server/src/bench/guard-bench.ts"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",

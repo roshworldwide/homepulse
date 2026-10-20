@@ -18,8 +18,12 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Typecheck
-        run: npm run typecheck
+        run: npm run typecheck && npm run typecheck -w @homepulse/console
       - name: Unit tests, including the 16,384-case guard test
         run: npm test
       - name: Holdout, guard level (fails on any attack allowed or legitimate visit refused)
         run: npm run holdout -- --level guard
+      - name: Build the guard package and the console
+        run: npm run build
+      - name: Golden-path scenarios in DEMO_MODE (offline stand-in)
+        run: npm run demo -- --all
