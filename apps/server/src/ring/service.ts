@@ -28,15 +28,16 @@ export function normalizeRingEvent(raw: unknown, fallbackNow: number): Omit<Door
   const r = (raw ?? {}) as Record<string, any>;
   const data = (r.data ?? r.event ?? r) as Record<string, any>;
   const attributes = (data.attributes ?? r.attributes ?? {}) as Record<string, unknown>;
-  const type = String(data.event_type ?? data.type ?? r.event_type ?? r.type ?? "unknown");
+  const type = String(data.event_type ?? attributes.event_type ?? data.type ?? r.event_type ?? r.type ?? "unknown");
   const sub = attributes.sub_type ?? data.sub_type ?? r.sub_type;
-  const occurred = data.occurred_at ?? data.timestamp ?? r.occurred_at ?? r.timestamp ?? r.created_at;
+  const occurred = attributes.occurred_at ?? attributes.timestamp ?? data.occurred_at ?? data.timestamp ?? r.occurred_at ?? r.meta?.timestamp ?? r.timestamp ?? r.created_at;
   const occurredMs = typeof occurred === "number" ? (occurred < 1e12 ? occurred * 1000 : occurred) : Date.parse(String(occurred ?? ""));
+  const device = data.relationships?.device?.data?.id ?? attributes.device_id ?? data.device_id ?? r.device_id ?? data.device?.id ?? null;
   return {
     event_id: String(data.event_id ?? data.id ?? r.event_id ?? r.id ?? `evt_${fallbackNow}`),
     type,
     sub_type: sub === undefined || sub === null ? null : String(sub),
-    device_id: (data.device_id ?? r.device_id ?? data.device?.id ?? null) as string | null,
+    device_id: device === null ? null : String(device),
     occurred_at: new Date(Number.isNaN(occurredMs) ? fallbackNow : occurredMs).toISOString(),
     attributes,
   };

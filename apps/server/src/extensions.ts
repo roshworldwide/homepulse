@@ -1,7 +1,8 @@
 import type { HomePulse } from "./context.js";
 import type { Extension } from "./http.js";
+import { ringWebhook } from "./ring/webhook.js";
 
-/** Optional route groups (Ring webhook, agents, demo). Filled in as those modules land. */
-export function extensions(_hp: HomePulse): Extension[] {
-  return [];
+/** Optional route groups (Ring webhook, agents, demo). */
+export function extensions(hp: HomePulse): Extension[] {
+  return [ringWebhook(hp)];
 }

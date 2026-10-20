@@ -1,0 +1,8 @@
+{
+  "people_count": 1,
+  "carrying": ["insulated cooler bag labelled COLD"],
+  "uniform_or_badge": { "visible": true, "text": "CITY HOME HEALTH" },
+  "visible_text": ["CITY HOME HEALTH", "COLD"],
+  "package_present": false,
+  "summary": "One adult in teal scrubs with a badge, carrying an insulated cooler bag."
+}
