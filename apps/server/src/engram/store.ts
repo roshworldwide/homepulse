@@ -1,4 +1,5 @@
-import Database from "better-sqlite3";
+import { DatabaseSync, type StatementSync } from "node:sqlite";
+import { quietSqliteWarning, transaction } from "../db.js";
 import { canonicalJson, chainHash, GENESIS_HASH, trustOf, verifyChain, type ChainCheck, type ChainedRecord, type Source, type Trust } from "mcp-streamable-guard";
 import type { Bus } from "../bus.js";
 import type { Clock } from "../clock.js";
@@ -65,12 +66,12 @@ export interface AppendInput {
  * open, or not?" using only what HomePulse knew at that moment.
  */
 export class Engram {
-  private insert: Database.Statement;
-  private last: Database.Statement;
+  private insert: StatementSync;
+  private last: StatementSync;
   private appendTx: (input: AppendInput) => EngramRecord;
 
   constructor(
-    readonly db: Database.Database,
+    readonly db: DatabaseSync,
     private clock: Clock,
     private bus?: Bus,
   ) {
@@ -79,8 +80,8 @@ export class Engram {
       "INSERT INTO records (id, kind, source, trust, payload, t_event, t_known, prev_hash, hash) VALUES (@id, @kind, @source, @trust, @payload, @t_event, @t_known, @prev_hash, @hash)",
     );
     this.last = db.prepare("SELECT id, hash FROM records ORDER BY id DESC LIMIT 1");
-    this.appendTx = db.transaction((input: AppendInput) => {
-      const prev = this.last.get() as { id: number; hash: string } | undefined;
+    this.appendTx = (input: AppendInput) => transaction(db, () => {
+      const prev = this.last.get() as unknown as { id: number; hash: string } | undefined;
       const now = this.clock.now();
       const body = {
         id: (prev?.id ?? 0) + 1,
@@ -93,7 +94,7 @@ export class Engram {
       };
       const prev_hash = prev?.hash ?? GENESIS_HASH;
       const hash = chainHash(prev_hash, body);
-      this.insert.run({ ...body, payload: canonicalJson(body.payload), prev_hash, hash });
+      this.insert.run({ ...body, payload: canonicalJson(body.payload), prev_hash, hash } as Record<string, string | number>);
       return { ...body, prev_hash, hash } as EngramRecord;
     });
   }
@@ -105,22 +106,22 @@ export class Engram {
   }
 
   all(): EngramRecord[] {
-    return (this.db.prepare("SELECT * FROM records ORDER BY id").all() as Row[]).map(fromRow);
+    return (this.db.prepare("SELECT * FROM records ORDER BY id").all() as unknown as Row[]).map(fromRow);
   }
 
   tail(n: number): EngramRecord[] {
-    return (this.db.prepare("SELECT * FROM (SELECT * FROM records ORDER BY id DESC LIMIT ?) ORDER BY id").all(n) as Row[]).map(fromRow);
+    return (this.db.prepare("SELECT * FROM (SELECT * FROM records ORDER BY id DESC LIMIT ?) ORDER BY id").all(n) as unknown as Row[]).map(fromRow);
   }
 
   get(id: number): EngramRecord | undefined {
-    const r = this.db.prepare("SELECT * FROM records WHERE id = ?").get(id) as Row | undefined;
+    const r = this.db.prepare("SELECT * FROM records WHERE id = ?").get(id) as unknown as Row | undefined;
     return r ? fromRow(r) : undefined;
   }
 
   /** Exactly what HomePulse knew at time T: every record with t_known <= T. */
   asOf(tMs: number): EngramRecord[] {
     const T = new Date(tMs).toISOString();
-    return (this.db.prepare("SELECT * FROM records WHERE t_known <= ? ORDER BY id").all(T) as Row[]).map(fromRow);
+    return (this.db.prepare("SELECT * FROM records WHERE t_known <= ? ORDER BY id").all(T) as unknown as Row[]).map(fromRow);
   }
 
   /** Records whose t_event falls in [fromMs, toMs] and that were known by toMs. */
@@ -138,13 +139,13 @@ export class Engram {
       params.push(source);
     }
     sql += " ORDER BY id";
-    return (this.db.prepare(sql).all(...params) as Row[]).map(fromRow);
+    return (this.db.prepare(sql).all(...(params as string[])) as unknown as Row[]).map(fromRow);
   }
 
   findDecision(decisionId: string): EngramRecord | undefined {
     const r = this.db
       .prepare("SELECT * FROM records WHERE kind = 'decision' AND json_extract(payload, '$.decision_id') = ? ORDER BY id DESC LIMIT 1")
-      .get(decisionId) as Row | undefined;
+      .get(decisionId) as unknown as Row | undefined;
     return r ? fromRow(r) : undefined;
   }
 
@@ -153,8 +154,9 @@ export class Engram {
   }
 }
 
-export function openDatabase(file: string | ":memory:"): Database.Database {
-  const db = new Database(file);
-  if (file !== ":memory:") db.pragma("journal_mode = WAL");
+export function openDatabase(file: string | ":memory:"): DatabaseSync {
+  quietSqliteWarning();
+  const db = new DatabaseSync(file);
+  if (file !== ":memory:") db.exec("PRAGMA journal_mode = WAL");
   return db;
 }

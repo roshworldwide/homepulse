@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import type Database from "better-sqlite3";
+import type { DatabaseSync } from "node:sqlite";
 import type { SigningKeys } from "mcp-streamable-guard";
 import type { AgentService } from "./agents/homepulse.js";
 import { Bus } from "./bus.js";
@@ -25,7 +25,7 @@ export interface HomePulse {
   config: Config;
   clock: Clock;
   bus: Bus;
-  db: Database.Database;
+  db: DatabaseSync;
   engram: Engram;
   passes: PassStore;
   approvals: Approvals;

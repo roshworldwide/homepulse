@@ -1,16 +1,16 @@
 {
-  "measured_at": "2026-10-20T22:51:56.558Z",
+  "measured_at": "2026-10-20T22:57:40.851Z",
   "machine": "Intel(R) Xeon(R) Processor @ 2.10GHz · 2 cores · Node v22.22.0 · linux",
   "runs": 10000,
   "decide_ms": {
     "median": 0.001,
-    "p95": 0.002,
-    "p99": 0.004
+    "p95": 0.003,
+    "p99": 0.015
   },
   "full_check_ms": {
-    "median": 0.483,
-    "p95": 0.743,
-    "p99": 1.22,
+    "median": 0.449,
+    "p95": 0.641,
+    "p99": 1.008,
     "includes": "Ed25519 verify, HMAC compare, SQLite reads (passes table, Engram window queries for visitor, rate and echo), decide(); excludes the decision record write"
   }
 }

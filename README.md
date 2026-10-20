@@ -16,7 +16,7 @@ No hardware is needed. Every simulated part says so in the app, this README and 
 | --- | --- | --- |
 | MCP server (2025-11-25, Streamable HTTP) | Real | Node.js + TypeScript, official `@modelcontextprotocol/sdk` 1.32.1 |
 | Guard, signed passes, approvals | Real | Pure function of 14 inputs, Ed25519, HMAC-SHA256, MCP elicitation |
-| Engram log | Real | SQLite, append-only, hash-chained, two timestamps per record |
+| Engram log | Real | SQLite (Node's built-in `node:sqlite`), append-only, hash-chained, two timestamps per record |
 | Visitor vision, rule drafting, agent tool use | Real | Amazon Bedrock Converse API (needs your AWS account) |
 | Ring device, history, snapshot calls | Real API calls | Ring Developer Playground (30-minute tokens): `npm run ring:check` |
 | Ring webhook delivery | Simulated | Local injector signs events exactly like Ring and posts them to the same receiver |
@@ -31,7 +31,7 @@ Without AWS credentials the app runs on an **offline stand-in**: a short script,
 
 ## Quick start
 
-Node.js 20 or newer. Chrome for the speech page.
+Node.js 22.13 or newer (Engram uses Node's built-in `node:sqlite`, so `npm ci` compiles nothing). Chrome for the speech page.
 
 ```bash
 npm ci
@@ -144,6 +144,7 @@ Only measured numbers appear here.
 - **Approvals wait inside the tool call**, bound to the request id. The agent doesn't have to retry.
 - **"Voice-only request" and "night mode" are notes, not reasons**, so every reason names an input that actually failed.
 - **Scenario 2 runs at 10:39 PM** so night mode comes from the clock. **Scenario 4 uses an indoor hall sensor**, because a doorbell camera faces outward.
+- **SQLite through `node:sqlite`** instead of `better-sqlite3`: `npm ci` from the lockfile tried to compile `better-sqlite3` with node-gyp, which needs a compiler and network access to nodejs.org. The built-in module needs neither.
 - **Echo check:** word 3-grams or a 4-word verbatim run, with look-alike folding, instead of 5-grams at 0.6, which missed paraphrases and short reasons.
 
 ## Repository

@@ -1,4 +1,5 @@
-import type Database from "better-sqlite3";
+import type { DatabaseSync } from "node:sqlite";
+import { transaction } from "../db.js";
 import { codeMatches, passInWindow, type Door, type VisitPass } from "mcp-streamable-guard";
 
 export const WRONG_CODE_LIMIT = 5;
@@ -30,7 +31,7 @@ const toRow = (r: Raw): PassRow => ({
 
 /** Signed passes. The guard re-verifies each pass's signature on every check. */
 export class PassStore {
-  constructor(private db: Database.Database) {
+  constructor(private db: DatabaseSync) {
     db.exec(`
       CREATE TABLE IF NOT EXISTS passes (
         pass_id        TEXT PRIMARY KEY,
@@ -53,12 +54,12 @@ export class PassStore {
   }
 
   get(passId: string): PassRow | undefined {
-    const r = this.db.prepare("SELECT * FROM passes WHERE pass_id = ?").get(passId) as Raw | undefined;
+    const r = this.db.prepare("SELECT * FROM passes WHERE pass_id = ?").get(passId) as unknown as Raw | undefined;
     return r ? toRow(r) : undefined;
   }
 
   all(): PassRow[] {
-    return (this.db.prepare("SELECT * FROM passes ORDER BY created_at").all() as Raw[]).map(toRow);
+    return (this.db.prepare("SELECT * FROM passes ORDER BY created_at").all() as unknown as Raw[]).map(toRow);
   }
 
   /** Passes that could still be used today or later (not used up, not revoked, not expired). */
@@ -82,12 +83,12 @@ export class PassStore {
     const info = this.db
       .prepare("UPDATE passes SET uses = uses + 1 WHERE pass_id = ? AND uses < max_uses AND revoked_at IS NULL")
       .run(passId);
-    return info.changes === 1;
+    return Number(info.changes) === 1;
   }
 
   /** Count a wrong code. Five wrong codes revoke the pass. Returns true when this call revoked it. */
   wrongCode(passId: string, nowMs: number): boolean {
-    return this.db.transaction(() => {
+    return transaction(this.db, () => {
       this.db.prepare("UPDATE passes SET wrong_codes = wrong_codes + 1 WHERE pass_id = ?").run(passId);
       const r = this.get(passId);
       if (r && !r.revoked_at && r.wrong_codes >= WRONG_CODE_LIMIT) {
@@ -95,7 +96,7 @@ export class PassStore {
         return true;
       }
       return false;
-    })();
+    });
   }
 
   revoke(passId: string, reason: string, nowMs: number): void {
