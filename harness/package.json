@@ -8,6 +8,7 @@
   "dependencies": {
     "@homepulse/server": "0.1.0",
     "mcp-streamable-guard": "0.1.0",
+    "sharp": "^0.35.5",
     "yaml": "^2.9.1"
   }
 }

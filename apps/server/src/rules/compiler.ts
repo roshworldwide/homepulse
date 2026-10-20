@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { hashCode, newCode, newPassId, signPass, type Door, type PassBody, type SigningKeys, type Source, type VisitPass } from "mcp-streamable-guard";
 import type { Clock } from "../clock.js";
 import type { Engram } from "../engram/store.js";
@@ -13,7 +12,7 @@ const DRAFT_TTL_MS = 15 * 60_000;
 const SAFE_DEPENDENCIES = new Set(["pass_code", "owner_approval"]);
 
 /** Conditions a visitor can fake. A rule that rests on any of these is refused. */
-const FAKEABLE = /\b(whoever|uniform|badge|wearing|dressed|says (?:she|he|they)(?:'s| is| are)|claims?|from amazon|delivery (?:guy|person|driver)s?|anyone|anybody|everyone|everybody|always|any ?night|every ?night|any ?time|whenever|face|looks like|recogni[sz]e)\b/i;
+const FAKEABLE = /\b(whoever|uniform|badge|wearing|dressed|says (?:she|he|they)(?:'s| is| are)|claims?|from amazon|delivery (?:guy|person|driver)s?|anyone|anybody|everyone|everybody|always|any ?night|every ?night|any ?time|whenever|face|looks? like|recogni[sz]e)\b/i;
 const OPEN_ENDED = /\b(always|forever|any ?night|every ?night|every ?day|any ?time|permanent(?:ly)?|from now on)\b/i;
 const NIGHT_WORDS = /\b(even at night|at night|overnight|late at night|night ?time)\b/i;
 
@@ -61,6 +60,7 @@ export class RuleCompiler {
     private codeSecret: string,
     private passes: PassStore,
     private engram: Engram,
+    private newId: (prefix: string) => string,
   ) {}
 
   getDraft(id: string): Draft | undefined {
@@ -155,7 +155,7 @@ export class RuleCompiler {
 
   private store(d: PublicDraft & { submitted_by: Source; utterance: string; model: ModelInfo; t_event: number }): Draft {
     const now = this.clock.now();
-    const draft: Draft = { ...d, draft_id: "draft_" + randomUUID().slice(0, 8), read_back: this.readBack(d, now), created_at: now };
+    const draft: Draft = { ...d, draft_id: this.newId("draft_"), read_back: this.readBack(d, now), created_at: now };
     this.drafts.set(draft.draft_id, draft);
     return draft;
   }
@@ -167,7 +167,7 @@ export class RuleCompiler {
       ? "Anyone can wear a uniform."
       : /\b(says|claims?|from amazon|amazon guy|delivery (?:guy|person|driver))\b/i.test(utterance)
         ? "Anyone can say that at the door."
-        : /\b(face|looks like|recogni[sz]e)\b/i.test(utterance)
+        : /\b(face|looks? like|recogni[sz]e)\b/i.test(utterance)
           ? "HomePulse doesn't open doors based on how someone looks."
           : OPEN_ENDED.test(utterance)
             ? "A pass can't be open-ended; it needs a time window of 12 hours or less."

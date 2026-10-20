@@ -34,12 +34,13 @@ export async function startServer(opts: { at?: string; env?: Record<string, stri
   const config = loadConfig(env, { dataDir: null });
   const clock = new ControlledClock(T(opts.at ?? "2026-10-22T14:14:00-07:00"), true);
   const hp = createHomePulse(config, { clock, dbFile: ":memory:", provider: opts.provider });
-  const { app, close } = createApp(hp, extensions(hp));
+  let base = "";
+  const { app, close } = createApp(hp, extensions(hp, () => `${base}/mcp`));
   const server: Server = await new Promise((resolve) => {
     const s = app.listen(0, "127.0.0.1", () => resolve(s));
   });
   const port = (server.address() as AddressInfo).port;
-  const base = `http://127.0.0.1:${port}`;
+  base = `http://127.0.0.1:${port}`;
   return {
     hp,
     url: `${base}/mcp`,
@@ -47,6 +48,7 @@ export async function startServer(opts: { at?: string; env?: Record<string, stri
     clock,
     token: (r) => config.tokens[r],
     close: async () => {
+      await hp.agents?.close();
       await close();
       server.closeAllConnections();
       await new Promise<void>((r) => server.close(() => r()));

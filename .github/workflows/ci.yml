@@ -21,3 +21,5 @@ jobs:
         run: npm run typecheck
       - name: Unit tests, including the 16,384-case guard test
         run: npm test
+      - name: Holdout, guard level (fails on any attack allowed or legitimate visit refused)
+        run: npm run holdout -- --level guard

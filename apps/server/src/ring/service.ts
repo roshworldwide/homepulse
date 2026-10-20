@@ -84,8 +84,10 @@ export class RingService {
   /** The snapshot for an event: bundled file for injected events, the Ring media API for real ones. */
   async snapshot(ev: DoorEvent): Promise<ImageInput | { unavailable: string }> {
     if (ev.snapshot) {
-      const file = path.join(ASSETS_DIR, path.basename(ev.snapshot));
-      if (!fs.existsSync(file)) return { unavailable: `snapshot ${ev.snapshot} not found` };
+      // Bundled assets, plus any extra folders (the Holdout harness renders sign snapshots into its own folder).
+      const dirs = [ASSETS_DIR, ...(process.env.HOMEPULSE_SNAPSHOT_DIRS ?? "").split(",").filter(Boolean)];
+      const file = dirs.map((d) => path.join(d, path.basename(ev.snapshot!))).find((f) => fs.existsSync(f));
+      if (!file) return { unavailable: `snapshot ${ev.snapshot} not found` };
       return { bytes: fs.readFileSync(file), mime: file.endsWith(".png") ? "image/png" : "image/jpeg", name: path.basename(file) };
     }
     if (!this.client || !ev.device_id) return { unavailable: "no snapshot for this event" };

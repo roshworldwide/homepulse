@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import {
   codeMatches,
   createGuard,
@@ -62,6 +61,7 @@ export interface Deps {
   devices: Devices;
   keys: SigningKeys;
   broker: ApprovalBroker;
+  newId: (prefix: string) => string;
 }
 
 export const doorOf = (tool: string): Door => (tool === "open_parcel_box" ? "parcel_box" : "front");
@@ -249,7 +249,7 @@ export function createHomeGuard(h: Deps): HomeGuard {
   });
 
   async function physical(tool: PhysicalTool, args: UnlockArgs, extra: PhysicalExtra) {
-    const decision_id = "dec_" + randomUUID().replace(/-/g, "").slice(0, 10);
+    const decision_id = h.newId("dec_");
     const now = h.clock.now();
     const source: Source = extra.role === "device" ? "visitor" : extra.role;
     h.engram.append({

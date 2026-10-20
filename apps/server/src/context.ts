@@ -2,12 +2,14 @@ import fs from "node:fs";
 import path from "node:path";
 import type Database from "better-sqlite3";
 import type { SigningKeys } from "mcp-streamable-guard";
+import type { AgentService } from "./agents/homepulse.js";
 import { Bus } from "./bus.js";
 import { ControlledClock, SystemClock, type Clock } from "./clock.js";
 import type { Config } from "./config.js";
 import { Devices } from "./devices/simulated.js";
 import { Engram, openDatabase } from "./engram/store.js";
 import { createHomeGuard, type HomeGuard } from "./guard/home-guard.js";
+import { Ids } from "./ids.js";
 import { loadOrCreateKeys } from "./keys.js";
 import { ApprovalBroker } from "./mcp/approvals.js";
 import { makeProvider } from "./models/index.js";
@@ -39,6 +41,9 @@ export interface HomePulse {
   provider: ModelProvider;
   /** Per-scenario context for fixtures ("nurse", "sign", ...). */
   scenario: string | null;
+  ids: Ids;
+  /** The HomePulse agent and the naive baseline (set when the agent routes are mounted). */
+  agents?: AgentService;
 }
 
 export interface CreateOptions {
@@ -66,9 +71,11 @@ export function createHomePulse(config: Config, opts: CreateOptions = {}): HomeP
   const devices = new Devices(clock, bus);
   const keys = loadOrCreateKeys(config.dataDir);
   const broker = new ApprovalBroker(clock, bus);
+  const ids = new Ids(config.demoMode);
+  const newId = (prefix: string) => ids.next(prefix);
   const ringClient = config.ringAccessToken ? new RingClient(config.ringApiBase, () => config.ringAccessToken) : null;
   const ring = new RingService(engram, clock, ringClient);
-  const homeGuard = createHomeGuard({ config, clock, bus, engram, passes, approvals, home, devices, keys, broker });
+  const homeGuard = createHomeGuard({ config, clock, bus, engram, passes, approvals, home, devices, keys, broker, newId });
 
   const hp = {
     config,
@@ -87,7 +94,8 @@ export function createHomePulse(config: Config, opts: CreateOptions = {}): HomeP
     ringClient,
     provider: opts.provider ?? makeProvider(config, () => hp.scenario),
     scenario: null as string | null,
+    ids,
   } as Omit<HomePulse, "compiler"> as HomePulse;
-  hp.compiler = new RuleCompiler(() => hp.provider, clock, config.tz, keys, config.codeSecret, passes, engram);
+  hp.compiler = new RuleCompiler(() => hp.provider, clock, config.tz, keys, config.codeSecret, passes, engram, newId);
   return hp;
 }
