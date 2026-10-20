@@ -89,16 +89,18 @@ describe("Streamable HTTP transport (MCP 2025-11-25)", () => {
     expect((await fetch(ts.url, { method: "DELETE", headers: hdr })).status).toBe(403);
   });
 
-  test("tools/list shows the eight tools with their annotations", async () => {
+  test("tools/list shows the ten tools with their annotations", async () => {
     const c = await connect(ts, "agent");
     const { tools } = await c.listTools();
     expect(tools.map((t) => t.name)).toEqual([
       "get_home_status",
       "get_door_events",
       "describe_visitor",
+      "explain_decision",
       "propose_rule",
       "confirm_rule",
       "notify_household",
+      "set_lockdown",
       "unlock_front_door",
       "open_parcel_box",
     ]);

@@ -67,8 +67,13 @@ export interface Deps {
 export const doorOf = (tool: string): Door => (tool === "open_parcel_box" ? "parcel_box" : "front");
 const doorName = (d: Door) => (d === "front" ? "front door" : "parcel box");
 
+/** Six-digit runs in free text (a code read aloud) are masked before anything is logged or broadcast. */
+export function redactCodes(text: string): string {
+  return text.replace(/\b\d{6}\b/g, "••••••");
+}
+
 export function redactArgs(args: UnlockArgs): Record<string, unknown> {
-  return { ...args, presented_code: args.presented_code ? "••••••" : undefined };
+  return { ...args, presented_code: args.presented_code ? "••••••" : undefined, reason: args.reason ? redactCodes(args.reason) : undefined };
 }
 
 /** Untrusted text recorded in the last `windowMs` (visitor descriptions, visitor speech, Ring attributes). */
@@ -152,7 +157,7 @@ export function createHomeGuard(h: Deps): HomeGuard {
 
       if (ctx.args.channel === "voice") notes.push("voice-only request: speaking starts a request but never opens the door by itself");
       if (x.night_mode) notes.push("night mode is on");
-      if (ctx.args.reason) notes.push(`stated reason (not used to decide): "${ctx.args.reason.slice(0, 120)}"`);
+      if (ctx.args.reason) notes.push(`stated reason (not used to decide): "${redactCodes(ctx.args.reason.slice(0, 120))}"`);
       return { inputs: x, messages, notes };
     },
 
@@ -162,9 +167,16 @@ export function createHomeGuard(h: Deps): HomeGuard {
       if (extra.bucket === "keypad" || extra.role === "homeowner" || extra.role === "caregiver") return;
       const now = h.clock.now();
       const door = doorOf(ctx.tool);
+      // A request that repeats camera text is not worth a phone prompt: tell the family, don't ask them.
+      // (This can only make HomePulse stricter; the guard never depends on it.)
+      const candidates = [ctx.args.reason, extra.agent_last_message].filter((s): s is string => !!s);
+      if (candidates.length && detectEcho(candidates, recentOutsideText(h.engram, now)).echoed) {
+        h.devices.alert("caregiver", "Someone at the door", "A request to open the door repeated text from the camera. The door stays locked.");
+        return;
+      }
       const ev = latestDoorEvent(h.engram, now);
       const evText = ev ? describeEvent(ev, h.config.tz) : "someone is at the door";
-      const claim = ctx.args.reason ? ` Unverified claim, not checked by HomePulse: "${ctx.args.reason.slice(0, 120)}".` : "";
+      const claim = ctx.args.reason ? ` Unverified claim, not checked by HomePulse: "${redactCodes(ctx.args.reason.slice(0, 120))}".` : "";
       const message = `Someone is at the ${doorName(door)} (${evText}). A request to open it came through the home assistant${ctx.args.channel === "voice" ? " by voice" : ""}.${claim} Open the ${doorName(door)} for ${Math.round(h.config.unlockMs / 1000)} seconds?`;
       h.devices.tv("approval", `Someone at the ${doorName(door)}`, "Asking the family to approve or deny on their phone.");
       const res = await h.broker.ask({

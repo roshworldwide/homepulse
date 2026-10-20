@@ -152,3 +152,15 @@ describe("one-time passes at the door", () => {
     expect(log).not.toContain(CODE);
   });
 });
+
+describe("codes read aloud", () => {
+  test("a code spoken to Alexa is masked in Engram and in the stated reason", async () => {
+    issue();
+    ring(ts);
+    const r = await fetch(`${ts.base}/agent/turn`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: `Hi, it's Nurse Sarah. My code is ${CODE}. Can you let me in?` }) });
+    expect(r.status).toBe(200);
+    const leaks = ts.hp.engram.all().filter((x) => JSON.stringify(x.payload).includes(CODE)).map((x) => `${x.kind}/${x.payload.type ?? x.payload.tool}`);
+    expect(leaks).toEqual([]);
+    expect(ts.hp.devices.frontDoor.history.some((h) => h.state === "unlocked")).toBe(true);
+  });
+});

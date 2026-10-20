@@ -11,6 +11,7 @@ import type { HomePulse } from "./context.js";
 import { buildMcpServer } from "./mcp/server.js";
 import type { SessionInfo } from "./tools/common.js";
 import { formatWindow } from "./time.js";
+import { scenarioMarker } from "./demo/scenarios.js";
 
 export interface Session {
   id: string;
@@ -214,6 +215,7 @@ export function snapshot(hp: HomePulse) {
     approvers: hp.broker.connected().map((a) => a.role),
     pending_approvals: [...hp.broker.pending.values()],
     drafts: hp.compiler.pendingDrafts().map((d) => ({ draft_id: d.draft_id, read_back: d.read_back, submitted_by: d.submitted_by })),
+    scenario_marker: scenarioMarker(hp),
     records: hp.engram.tail(300),
   };
 }

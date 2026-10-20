@@ -1,5 +1,6 @@
 import type { HomePulse } from "../context.js";
 import { FixtureStore } from "../models/fixtures.js";
+import { redactCodes } from "../guard/home-guard.js";
 import type { ModelInfo } from "../models/types.js";
 import { BedrockAgentModel, McpToolExecutor, runAgentLoop } from "./bedrock-mcp-bridge.js";
 import { NaiveToolExecutor } from "./naive.js";
@@ -131,7 +132,8 @@ export class AgentService {
       history,
       userText: text,
       now: () => this.hp.clock.now(),
-      onStep: (s) => this.hp.bus.publish({ type: "agent", agent: { name: rt.name, step: s } }),
+      // Codes never go out on the live feed, even when a visitor reads one aloud.
+      onStep: (s) => this.hp.bus.publish({ type: "agent", agent: { name: rt.name, step: JSON.parse(redactCodes(JSON.stringify(s))) } }),
     });
     rt.turns.push(messages.slice(history.length));
     if (rt.turns.length > MAX_TURNS_KEPT) rt.turns.shift();

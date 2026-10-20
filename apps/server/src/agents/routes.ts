@@ -1,6 +1,7 @@
 import type { HomePulse } from "../context.js";
 import type { Extension } from "../http.js";
 import { formatClock } from "../time.js";
+import { redactCodes } from "../guard/home-guard.js";
 import type { AgentService } from "./homepulse.js";
 
 /** Text the agents receive when the doorbell rings. The event itself stays in Engram as ring / untrusted. */
@@ -38,7 +39,7 @@ export function agentRoutes(hp: HomePulse, agents: AgentService): Extension {
         const text = String(req.body?.text ?? "").slice(0, 600).trim();
         if (!text) return res.status(400).json({ error: "Say something first." });
         const which = req.body?.agents === "homepulse" || req.body?.agents === "naive" ? req.body.agents : "both";
-        hp.engram.append({ kind: "input", source: "homeowner", payload: { type: "voice", text, channel: req.body?.channel === "text" ? "text" : "voice", speaker_verified: false, simulated_alexa: true } });
+        hp.engram.append({ kind: "input", source: "homeowner", payload: { type: "voice", text: redactCodes(text), channel: req.body?.channel === "text" ? "text" : "voice", speaker_verified: false, simulated_alexa: true } });
         try {
           res.json({ results: await agents.turn(text, which) });
         } catch (err) {
