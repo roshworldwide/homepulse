@@ -1,8 +1,8 @@
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
-  resolve: { conditions: ["source"] },
-  ssr: { resolve: { conditions: ["source"], externalConditions: ["source"] } },
+  resolve: { conditions: ["homepulse-source"] },
+  ssr: { resolve: { conditions: ["homepulse-source"], externalConditions: ["homepulse-source"] } },
   test: {
     include: ["packages/*/test/**/*.test.ts", "apps/server/test/**/*.test.ts", "harness/test/**/*.test.ts"],
     passWithNoTests: true,
