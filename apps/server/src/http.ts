@@ -23,7 +23,7 @@ export interface Session {
 export interface Extension {
   /** Routes that must see the raw body (the Ring webhook) are mounted before any JSON parser. */
   raw?: (app: express.Express) => void;
-  routes?: (app: express.Express, json: express.RequestHandler) => void;
+  routes?: (app: express.Express, json: express.RequestHandler, roleOf: (req: Request) => Role | null) => void;
 }
 
 const rpcError = (code: number, message: string) => ({ jsonrpc: "2.0", error: { code, message }, id: null });
@@ -172,7 +172,7 @@ export function createApp(hp: HomePulse, ext: Extension[] = []) {
   });
   app.get("/api/engram/verify", (_req, res) => res.json(hp.engram.verify()));
 
-  for (const e of ext) e.routes?.(app, json);
+  for (const e of ext) e.routes?.(app, json, roleOf);
 
   // 6. The built console, when present.
   const dist = path.join(REPO_ROOT, "apps/console/dist");

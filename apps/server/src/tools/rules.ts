@@ -32,7 +32,7 @@ export const registerProposeRule: Register = (server, hp, session) => {
 };
 
 /** Ask an approver to confirm a draft; on yes, sign it and show the code once on that approver's phone only. */
-export async function confirmDraft(hp: HomePulse, draftId: string, via: string) {
+export async function confirmDraft(hp: HomePulse, draftId: string, via: string, roles?: Array<"homeowner" | "caregiver">) {
   const draft = hp.compiler.getDraft(draftId);
   if (!draft) return { status: "not_found" as const, why: "No such draft. Drafts expire after 15 minutes." };
   const sentence = draft.read_back.replace(/ Confirm in the app\.$/, "");
@@ -44,6 +44,7 @@ export async function confirmDraft(hp: HomePulse, draftId: string, via: string) 
     title: "Confirm",
     description: "Confirm signs a one-time pass and shows you the code once.",
     timeoutMs: hp.config.approvalTimeoutMs,
+    roles,
   });
   if (ask.answer === null) return { status: "not_confirmed" as const, why: ask.why ?? "no answer" };
   hp.engram.append({ kind: "input", source: ask.role!, payload: { type: "rule_confirmation", draft_id: draftId, confirmed: ask.answer } });

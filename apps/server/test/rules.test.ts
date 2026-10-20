@@ -101,3 +101,29 @@ describe("voice-written rules", () => {
     expect(r.status).toBe("invalid");
   });
 });
+
+describe("caregiver note (stands in for a Bee recording)", () => {
+  test("a note written at 13:05 and synced at 13:40 becomes a caregiver-confirmed pass, with both timestamps", async () => {
+    const phone = await connect(ts, "caregiver", (p) => {
+      const field = Object.keys((p as { requestedSchema: { properties: object } }).requestedSchema.properties)[0];
+      return { action: "accept", content: { [field]: field === "confirm" } };
+    });
+    const r = await fetch(`${ts.base}/api/caregiver/note`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${ts.token("caregiver")}` },
+      body: JSON.stringify({ text: "Nurse Sarah and cold-chain insulin arriving at 2 PM", written_at: "2026-10-22T13:05:00-07:00" }),
+    });
+    const body = (await r.json()) as { status: string };
+    expect(body.status).toBe("draft");
+    for (let i = 0; i < 50 && ts.hp.passes.all().length === 0; i++) await sleep(20);
+    expect(ts.hp.passes.all()[0].pass).toMatchObject({ who: "Nurse Sarah", issued_by: "caregiver" });
+    const note = ts.hp.engram.all().find((x) => x.payload.type === "rule_utterance")!;
+    expect(note.source).toBe("caregiver");
+    expect(note.t_event).toBe("2026-10-22T20:05:00.000Z");
+    expect(note.t_known).not.toBe(note.t_event);
+    // Without the caregiver token the route refuses.
+    const no = await fetch(`${ts.base}/api/caregiver/note`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${ts.token("agent")}` }, body: JSON.stringify({ text: "x y z" }) });
+    expect(no.status).toBe(401);
+    await phone.close();
+  });
+});
