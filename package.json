@@ -28,6 +28,7 @@
     "ring:check": "tsx --conditions=homepulse-source apps/server/src/ring/check-cli.ts",
     "snapshots": "python3 scripts/make-snapshots.py",
     "holdout": "tsx --conditions=homepulse-source harness/run.ts",
+    "holdout:models": "tsx --conditions=homepulse-source harness/models.ts",
     "holdout:generate": "tsx --conditions=homepulse-source harness/generate.ts",
     "demo": "tsx --conditions=homepulse-source apps/server/src/demo/cli.ts",
     "demo:record": "tsx --conditions=homepulse-source apps/server/src/demo/cli.ts --record",
