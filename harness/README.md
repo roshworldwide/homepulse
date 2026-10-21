@@ -52,4 +52,4 @@ Runs the agent level for the naive baseline and HomePulse on each model, for exa
 
 `--concurrency` (default 2) runs cases in parallel; throttled cases are retried twice. A run with `--only` or `--allow-offline` writes to `out/` and is labelled as not a result. A full run is about 120 cases × 2 agents per model, each a few model calls, so expect a Bedrock bill and some minutes per model.
 
-The chart's colours are checked for colour-blind separation and contrast on its dark card (naive `#bf8318`, HomePulse `#2a9d8b`). Every value is printed on its column, and the table in `models-report.md` carries the same numbers.
+The chart uses the Rosh 27 palette, checked for colour-blind separation and contrast on its dark card (naive baseline `#6E84E8`, HomePulse `#B88A3E` Champagne, on `#141417`). Every value is printed on its column, and the table in `models-report.md` carries the same numbers.

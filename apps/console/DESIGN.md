@@ -20,6 +20,7 @@ This note records how its rules map onto HomePulse, so new screens stay in the s
 - **Roles, never hues.** Utilities are named after roles: `bg-canvas`, `bg-card`, `text-label-2`, `bg-fill-3`, `text-positive`. Fixed colours appear only where the system defines them: the aura and the silk, and the TV, camera frame and code blocks, which are dark in both appearances.
 - **Appearance.** Auto follows the system; Light and Dark are remembered in this browser. `index.html` resolves the choice before first paint, so the CSS has one dark block (`:root[data-theme="dark"]`).
 - **Glass is for the navigation layer:** the sidebar, toolbar, drawer, toasts, the break-in header and controls floating over media or silk. Content is opaque. Reduce Transparency swaps every density for Opaque.
+- **System settings are honoured.** Reduce Motion turns movement into cross-fades, Reduce Transparency makes glass opaque, and Increase Contrast raises edges to 1.5 pt and steps up labels and the tint.
 - **Status always pairs colour with a glyph and a word.**
   - Allowed: positive, open-lock glyph.
   - Blocked: caution, lock glyph.

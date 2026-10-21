@@ -45,7 +45,7 @@ export function breakItRoutes(hp: HomePulse, service = new BreakItService(hp, { 
       });
 
       app.get("/api/break-it/qr.svg", async (req, res) => {
-        const svg = await QRCode.toString(pageUrl(hp, req), { type: "svg", margin: 1, errorCorrectionLevel: "M", color: { dark: "#0b0f17", light: "#ffffff" } });
+        const svg = await QRCode.toString(pageUrl(hp, req), { type: "svg", margin: 1, errorCorrectionLevel: "M", color: { dark: "#0B0B0C", light: "#ffffff" } });
         res.set("Content-Type", "image/svg+xml").set("Cache-Control", "public, max-age=300").send(svg);
       });
 

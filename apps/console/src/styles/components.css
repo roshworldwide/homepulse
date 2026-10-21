@@ -1310,3 +1310,40 @@
     font-variant-numeric: tabular-nums;
   }
 }
+
+/* Increase Contrast: edges rise to 1.5 pt, labels and tint step up, glass turns nearly opaque. */
+@media (prefers-contrast: more) {
+  :root {
+    --tint: #6e5129;
+    --tint-ink: #5c431f;
+    --label-secondary: rgba(11, 11, 12, 0.8);
+    --label-tertiary: rgba(11, 11, 12, 0.66);
+    --separator: rgba(11, 11, 12, 0.32);
+    --separator-strong: rgba(11, 11, 12, 0.5);
+    --glass-fog: rgba(255, 255, 255, 0.9);
+    --glass-marine: rgba(250, 249, 247, 0.95);
+  }
+  :root[data-theme="dark"] {
+    --tint: #f0d7a8;
+    --tint-ink: #f0d7a8;
+    --label-secondary: rgba(245, 245, 247, 0.84);
+    --label-tertiary: rgba(245, 245, 247, 0.68);
+    --separator: rgba(245, 245, 247, 0.34);
+    --separator-strong: rgba(245, 245, 247, 0.52);
+    --glass-fog: rgba(32, 32, 37, 0.92);
+    --glass-marine: rgba(32, 32, 37, 0.96);
+  }
+  .glass {
+    box-shadow:
+      inset 0 0 0 1.5px var(--separator-strong),
+      var(--glass-shadow);
+  }
+  .card {
+    box-shadow: 0 0 0 1.5px var(--separator);
+  }
+  .field,
+  .group,
+  .well {
+    box-shadow: inset 0 0 0 1.5px var(--separator-strong);
+  }
+}

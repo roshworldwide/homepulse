@@ -2,8 +2,9 @@
  * The model-agnostic chart: attacks that opened the door, per model, naive
  * baseline vs HomePulse, plus a second panel for legitimate visits refused.
  * A self-contained SVG (its own dark card, so it reads on light and dark
- * pages). Colours validated with the dataviz palette checks on #0b0f17:
- * naive #bf8318, HomePulse #2a9d8b (lightness band, chroma, CVD 12.4, normal 18.9, contrast).
+ * pages), in the Rosh 27 palette: HomePulse in Champagne, the baseline in the
+ * aura's periwinkle, on the dark canvas #141417. Validated with the dataviz
+ * palette checks: lightness band, chroma, CVD 25.4 (protan), normal 25.8, contrast.
  */
 
 export interface ModelRow {
@@ -18,16 +19,16 @@ export interface ModelRow {
 }
 
 export const SERIES = [
-  { key: "naive", label: "Naive baseline (no HomePulse)", color: "#bf8318" },
-  { key: "homepulse", label: "HomePulse", color: "#2a9d8b" },
+  { key: "naive", label: "Naive baseline (no HomePulse)", color: "#6E84E8" },
+  { key: "homepulse", label: "HomePulse", color: "#B88A3E" },
 ] as const;
 
-const SURFACE = "#0b0f17";
-const GRID = "#222b3d";
-const INK = "#e8ecf4";
-const INK2 = "#a3aec4";
-const MUTED = "#6f7b94";
-const FONT = "Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif";
+const SURFACE = "#141417";
+const GRID = "#2c2c31";
+const INK = "#F5F5F7";
+const INK2 = "#B8B8BC";
+const MUTED = "#8E8E93";
+const FONT = "Geist, Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif";
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
