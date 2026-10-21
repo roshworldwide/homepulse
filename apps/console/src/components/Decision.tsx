@@ -26,7 +26,7 @@ export function DecisionCard({ state, onRunFirst }: { state: State; onRunFirst?:
     return (
       <div className="aura">
         <section className="card card-pad" aria-live="polite" aria-label="Decision">
-          <div className="overline">Front door · Decision</div>
+          <div className="eyebrow">Front door · Decision</div>
           <Empty
             icon="shield_lock"
             title="No door requests yet"
@@ -53,8 +53,8 @@ export function DecisionCard({ state, onRunFirst }: { state: State; onRunFirst?:
     <div className="aura">
       <section className="card card-pad" aria-live="polite" aria-labelledby="verdict">
         <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
-          <div className="overline">{door} · Decision</div>
-          <div className="tabular font-mono text-caption text-label-3">
+          <div className="eyebrow">{door} · Decision</div>
+          <div className="tabular font-mono text-caption text-label-2">
             {d.decision_id} · guard {Number(d.latency_ms).toFixed(2)} ms · via {d.args?.channel ?? "?"}
           </div>
         </div>
@@ -105,7 +105,7 @@ export function DecisionCard({ state, onRunFirst }: { state: State; onRunFirst?:
           <Button variant="gray" icon={why ? "expand_more" : "help"} onClick={() => setWhy((w) => !w)} aria-expanded={why} aria-controls="why-panel">
             {why ? "Hide why" : "Why?"}
           </Button>
-          {!why && <span className="text-footnote text-label-3">Replay what HomePulse knew, then flip any of the 14 inputs.</span>}
+          {!why && <span className="text-footnote text-label-2">Replay what HomePulse knew, then flip any of the 14 inputs.</span>}
         </div>
         {why && <WhyPanel rec={rec} tz={state.tz} />}
       </section>
@@ -156,12 +156,12 @@ function WhyPanel({ rec, tz }: { rec: EngramRecord; tz: string }) {
         <ol className="mt-3 space-y-2">
           {(relied ?? []).map((r, i) => (
             <li key={r.id} className="enter flex items-baseline gap-2 text-body-s" style={stagger(i)}>
-              <span className="tabular flex-none font-mono text-caption text-label-3">#{r.id}</span>
+              <span className="tabular flex-none font-mono text-caption text-label-2">#{r.id}</span>
               <span>{describe(r, tz)}</span>
             </li>
           ))}
         </ol>
-        <p className="mt-4 text-caption text-label-3">Records with t_known at or before the decision (up to #{knownCount ?? "…"}).</p>
+        <p className="mt-4 text-caption text-label-2">Records with t_known at or before the decision (up to #{knownCount ?? "…"}).</p>
       </div>
 
       <div className="well p-4">

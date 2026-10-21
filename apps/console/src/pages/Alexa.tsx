@@ -80,7 +80,7 @@ export function AlexaPage() {
       <div className="alexa-grid">
         <section className="area-talk card overflow-hidden" aria-label="Alexa+">
           <div className="silk-stage flex flex-col items-center gap-5 px-6 pb-8 pt-6">
-            <span className="tag glass glass-marine self-start !text-label-1">
+            <span className="tag glass glass-marine self-start">
               <Icon name="graphic_eq" fill />
               Alexa+ (simulated experience)
             </span>
@@ -137,14 +137,14 @@ export function AlexaPage() {
                         </div>
                       ) : l.who === "alexa" ? (
                         <div className="bubble-them max-w-[85%] bg-tint-soft px-4 py-3">
-                          <div className="flex items-center gap-1.5 text-caption font-semibold text-tint">
+                          <div className="flex items-center gap-1.5 text-caption font-semibold text-tint-ink">
                             <Icon name="graphic_eq" size={16} fill /> Alexa · HomePulse
                           </div>
                           <div className="spoken mt-1 text-[19px] leading-snug">{l.text}</div>
                         </div>
                       ) : (
                         <div className="bubble-them max-w-[85%] px-4 py-2.5 shadow-[inset_0_0_0_1px_var(--separator-strong)]">
-                          <div className="flex items-center gap-1.5 text-caption font-semibold text-label-3">
+                          <div className="flex items-center gap-1.5 text-caption font-semibold text-label-2">
                             <Icon name="smart_toy" size={16} /> Baseline: no HomePulse
                           </div>
                           <div className="mt-0.5 text-body-s text-label-2">{l.text}</div>

@@ -83,6 +83,12 @@
   --caution-soft: rgba(154, 98, 0, 0.12);
   --alarm-soft: rgba(200, 16, 46, 0.09);
   --info-soft: rgba(31, 95, 214, 0.1);
+  /* Ink: the same hues, darkened so text on the soft fills keeps 4.5:1 */
+  --tint-ink: #74572e;
+  --positive-ink: #166a3b;
+  --caution-ink: #7a4e00;
+  --alarm-ink: #a80d27;
+  --info-ink: #1a50b4;
 
   /* Rosh Glass: one material, five densities */
   --glass-shadow: 0 1px 3px rgba(28, 20, 12, 0.08), 0 8px 28px rgba(28, 20, 12, 0.12);
@@ -178,6 +184,11 @@
   --caution-soft: rgba(255, 181, 71, 0.14);
   --alarm-soft: rgba(255, 92, 114, 0.14);
   --info-soft: rgba(111, 168, 255, 0.14);
+  --tint-ink: #e2c28a;
+  --positive-ink: #4fd68a;
+  --caution-ink: #ffb547;
+  --alarm-ink: #ff7a8c;
+  --info-ink: #8ab9ff;
   --glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 8px 28px rgba(0, 0, 0, 0.42);
   --glass-sheen: linear-gradient(160deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 42%);
   --glass-top: rgba(255, 255, 255, 0.16);

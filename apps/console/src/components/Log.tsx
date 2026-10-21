@@ -14,13 +14,13 @@ export function AgentLog({ log, clear }: { log: AgentEvent[]; clear: () => void 
       {items.length === 0 ? (
         <p className="mt-3 text-footnote text-label-2">Tool calls from the HomePulse agent and the baseline show here.</p>
       ) : (
-        <ol className="mt-3 max-h-[320px] divide-y divide-sep overflow-y-auto rounded-12 shadow-[inset_0_0_0_1px_var(--separator)]">
+        <ol className="mt-3 max-h-[320px] divide-y divide-sep overflow-y-auto rounded-12 shadow-[inset_0_0_0_1px_var(--separator)]" tabIndex={0} aria-label="Agent tool calls (scrolls)">
           {items.map((e, i) => {
             const s = e.step!;
             const home = e.name !== "naive";
             return (
               <li key={`${s.at}-${i}`} className="enter flex items-start gap-3 px-3.5 py-2.5 text-body-s" style={stagger(i)}>
-                <span className="w-[86px] flex-none">
+                <span className="w-[100px] flex-none">
                   <Tag tone={home ? "tint" : "neutral"} icon={home ? "shield_lock" : "smart_toy"}>
                     {home ? "HomePulse" : "Baseline"}
                   </Tag>
@@ -30,7 +30,7 @@ export function AgentLog({ log, clear }: { log: AgentEvent[]; clear: () => void 
                     <>
                       <span className="text-label-2">calls </span>
                       <code className="font-mono text-[13px] font-medium">{s.name}</code>
-                      <div className="mt-0.5 truncate font-mono text-caption text-label-3" title={JSON.stringify(s.input)}>
+                      <div className="mt-0.5 truncate font-mono text-caption text-label-2" title={JSON.stringify(s.input)}>
                         {JSON.stringify(s.input)}
                       </div>
                     </>
@@ -72,7 +72,7 @@ export function Narration({ captions }: { captions: string[] }) {
       {captions.length === 0 ? (
         <p className="mt-3 text-footnote text-label-2">Run a scenario from the sidebar, or press 1 to 4, and each step is narrated here.</p>
       ) : (
-        <ol className="relative mt-3 space-y-2.5 before:absolute before:bottom-1.5 before:left-[3.5px] before:top-1.5 before:w-px before:bg-sep" aria-live="polite">
+        <ol className={`relative mt-3 space-y-2.5 ${captions.length > 1 ? "before:absolute before:bottom-2.5 before:left-[3.5px] before:top-2.5 before:w-px before:bg-sep" : ""}`} aria-live="polite">
           {captions.map((c, i) => {
             const last = i === captions.length - 1;
             return (

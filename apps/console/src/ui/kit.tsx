@@ -132,7 +132,7 @@ export function Empty({ icon, title, children, action }: { icon: IconName; title
       <div className="empty-glyph">
         <Icon name={icon} />
       </div>
-      <h3 className="mt-4 text-title-3">{title}</h3>
+      <h2 className="mt-4 text-title-3">{title}</h2>
       {children && <p className="mt-1.5 max-w-[34ch] text-footnote text-label-2">{children}</p>}
       {action && <div className="mt-4">{action}</div>}
     </div>

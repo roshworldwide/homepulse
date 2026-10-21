@@ -73,7 +73,15 @@ export function Timeline({ state }: { state: State }) {
       setVerifying(false);
     }
   };
-  const at = pos === null ? marks.length - 1 : pos;
+  // A new scenario (or a different scope) starts back at live: the old stops no longer exist.
+  useEffect(() => {
+    if (timer.current) clearTimeout(timer.current);
+    setPos(null);
+    setReplay(null);
+    setAsOf("");
+  }, [state.scenario_marker, scope]);
+  const at = pos === null || pos >= marks.length - 1 ? marks.length - 1 : pos;
+  const travelled = at < marks.length - 1;
   const pct = marks.length > 1 ? (at / (marks.length - 1)) * 100 : 100;
   // Only a value the picker produced goes back into it (scrubber instants are ISO with a Z).
   const pickerValue = asOf && !asOf.endsWith("Z") ? asOf : "";
@@ -119,11 +127,11 @@ export function Timeline({ state }: { state: State }) {
               style={{ "--pct": `${pct}%` } as CSSProperties}
               onChange={(e) => scrub(Number(e.target.value))}
               aria-label="Time travel"
-              aria-valuetext={pos === null ? "Live" : `As known at ${fmtTime(marks[pos], state.tz, true)}`}
+              aria-valuetext={travelled ? `As known at ${fmtTime(marks[at], state.tz, true)}` : "Live"}
             />
-            <span className={`tabular w-[84px] flex-none text-right font-mono text-[13px] font-medium ${pos === null ? "text-positive" : "text-tint"}`}>{pos === null ? "Live" : fmtTime(marks[pos], state.tz, true)}</span>
+            <span className={`tabular w-[84px] flex-none text-right font-mono text-[13px] font-medium ${travelled ? "text-tint" : "text-positive"}`}>{travelled ? fmtTime(marks[at], state.tz, true) : "Live"}</span>
           </div>
-          <p className="mt-0.5 text-caption text-label-3">
+          <p className="mt-0.5 text-caption text-label-2">
             {marks.length} moments. Drag left to see the log exactly as HomePulse knew it then.
           </p>
         </div>
@@ -134,13 +142,13 @@ export function Timeline({ state }: { state: State }) {
           {verify.text}
         </Banner>
       )}
-      {replay && (
+      {replay && asOf && !Number.isNaN(Date.parse(asOf)) && (
         <Banner tone="info" icon="history" className="enter mt-3">
           Replaying {replay.length} records known by <span className="tabular">{fmtTime(asOf, state.tz, true)}</span>: exactly what HomePulse knew then.
         </Banner>
       )}
 
-      <div className="mt-4 max-h-[460px] overflow-y-auto rounded-12 shadow-[inset_0_0_0_1px_var(--separator)]">
+      <div className="mt-4 max-h-[460px] overflow-y-auto rounded-12 shadow-[inset_0_0_0_1px_var(--separator)]" tabIndex={0} role="region" aria-label="Engram records (scrolls)">
         <div className={`sticky top-0 z-[1] hidden gap-3 border-b border-sep bg-card px-3.5 py-2 text-caption font-semibold text-label-2 md:grid ${COLS}`} aria-hidden>
           <span>#</span>
           <span>Time</span>
@@ -153,10 +161,10 @@ export function Timeline({ state }: { state: State }) {
           {records.map((r, i) => (
             <li
               key={r.id}
-              className={`grid grid-cols-[auto_auto_minmax(0,1fr)] items-baseline gap-x-3 gap-y-1.5 border-b border-sep px-3.5 py-2.5 text-body-s last:border-b-0 ${COLS} ${seen > 0 && r.id > seen && !replay ? "enter bg-tint-soft" : ""}`}
+              className={`grid grid-cols-[auto_auto_minmax(0,1fr)] items-baseline gap-x-3 gap-y-1.5 border-b border-sep px-3.5 py-2.5 text-body-s last:border-b-0 ${COLS} ${seen > 0 && r.id > seen && !replay ? "flash" : ""}`}
               style={stagger(i)}
             >
-              <span className="tabular font-mono text-caption text-label-3">#{r.id}</span>
+              <span className="tabular font-mono text-caption text-label-2">#{r.id}</span>
               <span className="tabular text-footnote text-label-2">{fmtTime(r.t_event, state.tz, true)}</span>
               <span className="justify-self-end md:justify-self-start">
                 <Tag tone={KIND_TONE[r.kind] ?? "neutral"}>{r.kind.replace("_", " ")}</Tag>
@@ -175,7 +183,7 @@ export function Timeline({ state }: { state: State }) {
               <span className="col-span-3 min-w-0 break-words md:col-span-1">
                 {describe(r, state.tz)}
                 {r.t_known !== r.t_event && Math.abs(Date.parse(r.t_known) - Date.parse(r.t_event)) > 60_000 && (
-                  <span className="text-caption text-label-3"> (recorded {fmtTime(r.t_known, state.tz)})</span>
+                  <span className="text-caption text-label-2"> (recorded {fmtTime(r.t_known, state.tz)})</span>
                 )}
               </span>
             </li>

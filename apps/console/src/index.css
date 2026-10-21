@@ -82,6 +82,11 @@
   --color-tint: var(--tint);
   --color-tint-fill: var(--tint-fill);
   --color-tint-soft: var(--tint-soft);
+  --color-tint-ink: var(--tint-ink);
+  --color-positive-ink: var(--positive-ink);
+  --color-caution-ink: var(--caution-ink);
+  --color-alarm-ink: var(--alarm-ink);
+  --color-info-ink: var(--info-ink);
   --color-on-tint: var(--on-tint);
 
   --color-surface: var(--bg-primary);

@@ -16,7 +16,7 @@
   "scripts": {
     "dev": "concurrently -n server,console -c cyan,magenta \"npm run dev -w @homepulse/server\" \"npm run dev -w @homepulse/console\"",
     "start": "npm run start -w @homepulse/server",
-    "typecheck": "tsc -p packages/guard && tsc -p packages/guard/tsconfig.examples.json && tsc -p apps/server --noEmit && tsc -p harness --noEmit",
+    "typecheck": "tsc -p packages/guard && tsc -p packages/guard/tsconfig.examples.json && tsc -p apps/server --noEmit && tsc -p harness --noEmit && tsc -p apps/console --noEmit",
     "test": "vitest run",
     "test:exhaustive": "vitest run packages/guard/test/exhaustive.test.ts",
     "build:guard": "npm run build -w mcp-streamable-guard",

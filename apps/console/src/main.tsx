@@ -1,6 +1,7 @@
 import { StrictMode, type ComponentType } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
+import { ErrorBoundary } from "./ui/ErrorBoundary";
 
 // One bundle per page: the public break-in page never downloads the MCP client the phones use.
 const path = window.location.pathname.replace(/\/+$/, "");
@@ -14,7 +15,9 @@ const load: Promise<ComponentType> =
 void load.then((Page) =>
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
-      <Page />
+      <ErrorBoundary>
+        <Page />
+      </ErrorBoundary>
     </StrictMode>,
   ),
 );

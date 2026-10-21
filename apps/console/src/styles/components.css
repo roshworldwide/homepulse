@@ -148,7 +148,7 @@
       padding: 16px;
     }
   }
-  .overline {
+  .eyebrow {
     font-size: 11px;
     line-height: 1.2;
     font-weight: 600;
@@ -233,7 +233,7 @@
   }
   .btn-tinted {
     --bg: var(--tint-soft);
-    --fg: var(--tint);
+    --fg: var(--tint-ink);
   }
   .btn-gray {
     --bg: var(--fill-secondary);
@@ -393,27 +393,32 @@
     flex: none;
   }
   .tag-positive {
-    --tone: var(--positive);
+    --tone: var(--positive-ink);
     --tone-bg: var(--positive-soft);
   }
   .tag-caution {
-    --tone: var(--caution);
+    --tone: var(--caution-ink);
     --tone-bg: var(--caution-soft);
   }
   .tag-alarm {
-    --tone: var(--alarm);
+    --tone: var(--alarm-ink);
     --tone-bg: var(--alarm-soft);
   }
   .tag-info {
-    --tone: var(--info);
+    --tone: var(--info-ink);
     --tone-bg: var(--info-soft);
   }
   .tag-tint {
-    --tone: var(--tint);
+    --tone: var(--tint-ink);
     --tone-bg: var(--tint-soft);
   }
   .tag-wrap {
     white-space: normal;
+  }
+  /* A tag floating over media takes the glass density, not a fill. */
+  .tag.glass {
+    background: var(--glass-tint, var(--glass-fog));
+    color: var(--label-primary);
   }
 
   /* ---------- Keyboard keys ---------- */
@@ -977,6 +982,10 @@
     animation: rosh-rise var(--duration-base) var(--ease-enter) both;
     animation-delay: calc(min(var(--i, 0), 8) * 24ms);
   }
+  /* A row that just arrived: the tint fades out over 2 s. */
+  .flash {
+    animation: rosh-flash 2s var(--ease-standard) both;
+  }
   .pop {
     animation: rosh-pop var(--duration-slow) var(--spring-bounce) both;
   }
@@ -1028,6 +1037,14 @@
   from {
     opacity: 0;
     transform: translateY(6px);
+  }
+}
+@keyframes rosh-flash {
+  from {
+    background-color: var(--tint-soft);
+  }
+  to {
+    background-color: transparent;
   }
 }
 @keyframes rosh-pop {

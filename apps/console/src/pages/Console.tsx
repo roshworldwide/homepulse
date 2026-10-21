@@ -33,7 +33,7 @@ function ScenarioNav({ current, running, run, onHall, onReset }: { current: stri
     <>
       <div className="nav-head flex items-center justify-between">
         <span>Scenarios</span>
-        <span className="font-medium text-label-3">Keys 1–4</span>
+        <span className="font-medium text-label-2">Keys 1–4</span>
       </div>
       {SCENARIOS.map(([id, label], i) => (
         <button key={id} type="button" className="nav-row" data-selected={current === id} aria-keyshortcuts={String(i + 1)} onClick={() => run(id)}>
@@ -117,7 +117,7 @@ export function ConsolePage() {
             </PhonePanel>
             <Narration captions={captions} />
           </aside>
-          <div className="area-door grid gap-4 md:grid-cols-2">
+          <div className="area-door grid gap-4 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
             <RingFeed state={state} onAsk={() => postJson("/agent/door-event").catch(() => {})} />
             <Keypad state={state} />
           </div>

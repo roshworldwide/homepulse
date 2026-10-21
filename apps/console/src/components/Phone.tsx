@@ -1,7 +1,8 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { fmtTime, postJson, type State } from "../lib/api";
 import type { Ask } from "../lib/phone";
 import { Banner, Button, Card, Icon, Mark, Tag, stagger } from "../ui/kit";
+import { toast } from "../ui/toast";
 
 /**
  * A family phone. It is a real MCP client: it opens a session with the homeowner or
@@ -10,6 +11,12 @@ import { Banner, Button, Card, Icon, Mark, Tag, stagger } from "../ui/kit";
 export function PhonePanel({ person, roleLabel, role, asks, status, state, token, children }: { person: string; roleLabel: string; role: "homeowner" | "caregiver"; asks: Ask[]; status: string; state: State; token?: string; children?: ReactNode }) {
   const alerts = state.devices.alerts.filter((a) => a.to === role).slice(-4).reverse();
   const connected = status === "connected";
+  // When the phone sits below the fold (no inspector column), say that a request arrived.
+  const prev = useRef(asks.length);
+  useEffect(() => {
+    if (asks.length > prev.current && window.innerWidth < 1280) toast(`New request on ${person === "Homeowner" ? "the homeowner's" : `${person}'s`} phone, below`, { key: `ask-${role}`, tone: "tint", icon: "notifications", ms: 5000 });
+    prev.current = asks.length;
+  }, [asks.length, person, role]);
   return (
     <Card aria-label={`${person}'s phone`}>
       <header className="flex items-center gap-3">
@@ -45,7 +52,7 @@ export function PhonePanel({ person, roleLabel, role, asks, status, state, token
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
                     <span className="text-body-s font-semibold">{a.title}</span>
-                    <span className="tabular flex-none text-caption text-label-3">{fmtTime(a.at, state.tz)}</span>
+                    <span className="tabular flex-none text-caption text-label-2">{fmtTime(a.at, state.tz)}</span>
                   </div>
                   {a.body && <p className="mt-0.5 text-footnote text-label-2">{a.body}</p>}
                 </div>
@@ -55,7 +62,7 @@ export function PhonePanel({ person, roleLabel, role, asks, status, state, token
         )}
       </div>
       {children}
-      {!token && <p className="mt-3 text-caption text-label-3">Tokens are not exposed to this browser (set CONSOLE_EXPOSE_TOKENS=true for the local demo).</p>}
+      {!token && <p className="mt-3 text-caption text-label-2">Tokens are not exposed to this browser (set CONSOLE_EXPOSE_TOKENS=true for the local demo).</p>}
     </Card>
   );
 }
@@ -77,7 +84,7 @@ function AskCard({ ask }: { ask: Ask }) {
           <div className="tabular mt-2 font-mono text-[32px] font-medium tracking-[0.3em] text-label-1" aria-label={`Code ${code.split("").join(" ")}`}>
             {code}
           </div>
-          <p className="text-caption text-label-3">Shown once. HomePulse keeps only a hash.</p>
+          <p className="text-caption text-label-2">Shown once. HomePulse keeps only a hash.</p>
         </>
       ) : (
         <p className="mt-2 text-body-s leading-snug">{ask.message}</p>

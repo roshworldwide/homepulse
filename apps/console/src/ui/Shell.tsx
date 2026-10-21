@@ -139,7 +139,7 @@ export function AppShell({ page, title, subtitle, state, connected, nav, childre
       )}
 
       <div className="lg:pl-[276px]">
-        <div className="toolbar-wrap">
+        <header className="toolbar-wrap">
           <div className="glass glass-fog flex h-14 items-center gap-3 rounded-16 pl-2 pr-3 lg:pl-5">
             <Button ref={menuBtn} variant="plain" iconOnly icon="menu" aria-label="Open menu" aria-expanded={open} className="text-label-1 lg:hidden" onClick={() => setOpen(true)} />
             <div className="min-w-0 flex-1">
@@ -156,7 +156,7 @@ export function AppShell({ page, title, subtitle, state, connected, nav, childre
             </span>
             <Live connected={connected} />
           </div>
-        </div>
+        </header>
         <main id="main" className="mx-auto w-full max-w-[1600px] px-2 pb-10 pt-4 sm:px-4 lg:pl-0 lg:pr-2">
           {state && (
             <div className="mb-3 flex flex-wrap gap-1.5 md:hidden">

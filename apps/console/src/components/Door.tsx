@@ -26,7 +26,7 @@ export function RingFeed({ state, onAsk }: { state: State; onAsk: () => void }) 
   };
   return (
     <Card pad={false} className="overflow-hidden" aria-label="Front door camera">
-      <div className="relative aspect-[4/3] bg-[#0b0b0c]">
+      <div className="relative aspect-[16/10] bg-[#0b0b0c]">
         {ev && broken !== ev.id ? (
           <img key={ev.id} src={`/api/snapshot/${encodeURIComponent(ev.payload.event.event_id)}`} alt="Doorbell snapshot" className="absolute inset-0 h-full w-full object-cover" onError={() => setBroken(ev.id)} />
         ) : (
@@ -36,14 +36,14 @@ export function RingFeed({ state, onAsk }: { state: State; onAsk: () => void }) 
           </div>
         )}
         <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
-          <span className="tag glass glass-marine !text-label-1">
+          <span className="tag glass glass-marine">
             <Icon name={ev && !ev.payload.simulated ? "videocam" : "science"} fill />
             {ev ? (ev.payload.simulated ? "Simulated event" : "Ring API") : "Simulated camera"}
           </span>
         </div>
         {ev && (
           <div className="absolute bottom-3 left-3 right-3 flex">
-            <span className="tag glass glass-marine !text-label-1 !text-[13px] !min-h-7 !px-3">
+            <span className="tag glass glass-marine !min-h-7 !px-3 !text-[13px]">
               <Icon name={ev.payload.event.type === "button_press" ? "doorbell" : "sensors"} fill />
               {ev.payload.event.type === "button_press" ? "Doorbell pressed" : `Motion: ${ev.payload.event.sub_type ?? "unknown"}`}
               <span className="tabular font-medium text-label-2">· {fmtTime(ev.t_event, state.tz)}</span>

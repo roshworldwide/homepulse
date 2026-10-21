@@ -48,12 +48,12 @@ const EXAMPLES = [
 function Stat({ value, label, icon, tone }: { value: number | string; label: string; icon: IconName; tone?: Tone }) {
   const color = tone === "positive" ? "text-positive" : tone === "alarm" ? "text-alarm" : "text-label-1";
   return (
-    <div className="card min-w-0 rounded-24 p-5">
+    <div className="card flex min-w-0 items-center justify-between gap-3 rounded-24 px-5 py-4 sm:block sm:p-5">
       <div className={`flex items-center gap-1.5 text-caption font-semibold ${tone ? color : "text-label-2"}`}>
         <Icon name={icon} size={16} fill />
         {label}
       </div>
-      <div className={`stat-value mt-4 ${color}`}>{value}</div>
+      <div className={`stat-value !text-[34px] sm:mt-4 sm:!text-[44px] ${color}`}>{value}</div>
     </div>
   );
 }
@@ -165,7 +165,7 @@ export function BreakItPage() {
         <section className="silk-stage rounded-28 px-4 py-6 sm:rounded-34 sm:px-8 sm:py-10 lg:px-12 lg:py-14" aria-labelledby="hero-title">
           <Icon name="lock" className="hero-glyph" />
           <div className="glass glass-marine relative max-w-[640px] rounded-28 p-6 sm:p-8">
-            <div className="overline">Live demo · real agents, pretend lock</div>
+            <div className="eyebrow">Live demo · real agents, pretend lock</div>
             <h1 id="hero-title" className="mt-3 text-[40px] font-bold leading-[1.04] tracking-[-0.032em] sm:text-hero">
               Try to break in.
             </h1>
@@ -214,7 +214,7 @@ export function BreakItPage() {
             onChange={(e) => setSpeech(e.target.value)}
           />
           <div className="mt-1.5 flex justify-end">
-            <span className="tabular text-caption text-label-3">
+            <span className="tabular text-caption text-label-2">
               {speech.length}/{max}
             </span>
           </div>
@@ -287,7 +287,7 @@ export function BreakItPage() {
           <section ref={resultRef} className="grid scroll-mt-20 grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-2" aria-live="polite" aria-label="What happened">
             <div className="aura enter">
               <div className="card card-pad h-full">
-                <div className="overline">With HomePulse</div>
+                <div className="eyebrow">With HomePulse</div>
                 <Verdict opened={hp.door_opened} safeTone="positive" />
                 {triedDoor ? (
                   hp.decisions.map((d, i) => (
@@ -330,7 +330,7 @@ export function BreakItPage() {
                     </div>
                     <p className="mt-2 text-body-s">{hp.saw.summary}</p>
                     {hp.saw.visible_text.length > 0 && <p className="mt-1 text-footnote text-label-2">Text: {hp.saw.visible_text.map((t) => `“${t}”`).join(", ")}</p>}
-                    <p className="mt-1.5 text-caption text-label-3">Data, never a reason to open.</p>
+                    <p className="mt-1.5 text-caption text-label-2">Data, never a reason to open.</p>
                   </div>
                 )}
                 <div className="mt-4">
@@ -350,7 +350,7 @@ export function BreakItPage() {
             </div>
 
             <div className="card card-pad enter" style={stagger(1)}>
-              <div className="overline !text-label-2">Without HomePulse</div>
+              <div className="eyebrow !text-label-2">Without HomePulse</div>
               <Verdict opened={outcome.baseline.door_opened} safeTone="neutral" />
               <p className="mt-4 text-body-s text-label-2">Same model and prompt style. Its unlock tool drives a second simulated door directly, with no guard.</p>
               <div className="mt-4">
@@ -367,7 +367,7 @@ export function BreakItPage() {
                 </div>
               </details>
             </div>
-            <p className="px-1 text-caption text-label-3 md:col-span-2">
+            <p className="px-1 text-caption text-label-2 md:col-span-2">
               {outcome.model} · <span className="tabular">{(outcome.took_ms / 1000).toFixed(1)} s</span>
               {outcome.night_mode ? " · night mode is on at the house" : ""}
             </p>

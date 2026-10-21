@@ -174,6 +174,7 @@ Only measured numbers appear here.
 - **The break-in page deploys to Amazon ECS Express Mode, not App Runner.** [App Runner no longer takes new customers](https://docs.aws.amazon.com/apprunner/latest/dg/apprunner-availability-change.html); AWS points to ECS Express Mode instead.
 - **Every break-in attempt gets its own fresh house** instead of one shared house reset every hour, so one visitor's lockdown or rate-limit hits can't change the next visitor's result.
 - **The lockdown card on the TV is amber,** like every warning in the app, rather than red.
+- **The frontend follows the Rosh 27 design system** ([apps/console/DESIGN.md](apps/console/DESIGN.md)): Champagne tint, light and dark appearances, glass only on the navigation layer, and a verdict that always carries a glyph and a word. The alarm red appears only when the unguarded baseline door opens and on errors.
 
 ## Repository
 
@@ -181,7 +182,7 @@ Only measured numbers appear here.
 packages/guard   mcp-streamable-guard: policy, spec, passes, provenance, audit, middleware, approvals, proxy (MIT)
                  examples/smartlock-co: a third-party lock server, guarded by a 10-line policy
 apps/server      MCP server, tools, guard wiring, Engram, simulated devices, Ring, Bedrock, agents, demo
-apps/console     Vite + React + Tailwind: /console, /alexa and /break-it
+apps/console     Vite + React + Tailwind on the Rosh 27 design system: /console, /alexa and /break-it
 harness          Holdout: attacks/*.yaml, guard-level and agent-level runners
 assets           Simulated doorbell snapshots
 docs             architecture, latency, stress report, product feedback, friction log
