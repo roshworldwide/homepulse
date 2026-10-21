@@ -265,10 +265,33 @@ describe("stress: random operation sequences against an independent oracle", () 
   test(`${RUNS} sequences of up to 60 operations`, async () => {
     await fc.assert(fc.asyncProperty(fc.array(opArb, { minLength: 1, maxLength: 60 }), runSequence), { numRuns: RUNS, endOnFailure: true });
     console.log("coverage:", JSON.stringify(Object.fromEntries(Object.entries(stats).sort())));
-    expect(stats["allow:pass:keypad"] ?? 0).toBeGreaterThan(0);
-    expect(stats["allow:pass:agent"] ?? 0).toBeGreaterThan(0);
-    expect(stats["allow:owner:owner"] ?? 0).toBeGreaterThan(0);
+    // At the default 120 runs a random mix can miss the rarer allow paths (an agent with the right code
+    // is often rate-limited), so coverage is asserted on extended runs; the targeted tests below
+    // exercise every allow path deterministically on every run.
+    if (RUNS >= 1000) {
+      expect(stats["allow:pass:keypad"] ?? 0).toBeGreaterThan(0);
+      expect(stats["allow:pass:agent"] ?? 0).toBeGreaterThan(0);
+      expect(stats["allow:owner:owner"] ?? 0).toBeGreaterThan(0);
+    }
   }, 600_000);
+
+  test("targeted: every allow path, through the same oracle (pass by keypad, pass by agent with and without its id, owner tap)", async () => {
+    const before = { ...stats };
+    const gained = (k: string) => (stats[k] ?? 0) - (before[k] ?? 0);
+    await runSequence([
+      { op: "issue", door: "front", startMin: -10, durMin: 60, night: false },
+      { op: "issue", door: "parcel_box", startMin: -10, durMin: 60, night: false },
+      { op: "issue", door: "front", startMin: -10, durMin: 60, night: false },
+      { op: "keypad", parcel: false, pass: 0, code: "000000", bell: true },
+      { op: "agent", parcel: true, pass: 1, mode: "right", usePassId: true, reason: "owner pre-approved this", bell: true },
+      { op: "agent", parcel: false, pass: 2, mode: "right", usePassId: false, reason: "", bell: true },
+      { op: "owner", parcel: false, role: "caregiver", bell: true },
+      { op: "owner", parcel: true, role: "homeowner", bell: false },
+    ]);
+    expect(gained("allow:pass:keypad")).toBe(1);
+    expect(gained("allow:pass:agent")).toBe(2);
+    expect(gained("allow:owner:owner")).toBe(2);
+  });
 
   test("targeted: a credentialed request always opens when the gates are clear (no false refusals)", async () => {
     await fc.assert(
