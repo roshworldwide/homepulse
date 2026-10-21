@@ -75,5 +75,5 @@ Run on 21 Oct 2026 on a 2-core Intel Xeon (2.10 GHz), Node 22.22. Everything bel
 
 - **Session-start burst:** when 50 MCP sessions connect at the same instant, their first calls reach about 2.5–3 s at p99 while each session's tools are set up. After that, p99 was 169 ms with the server and clients in separate processes.
 - **Keypad lockout:** the keypad allows 5 attempts per 10 minutes in total, like a real keypad lockout. A stranger can lock it for 10 minutes. The caregiver is alerted on every block and can still approve from the phone.
-- **Rate limiting by address:** behind a reverse proxy, every client shares one address.
+- **Rate limiting by address:** behind a reverse proxy every client shares one address unless `TRUST_PROXY` is set (added with the break-in page; the public image sets it to one hop).
 - **No real model in these runs:** stress runs use the offline stand-in. The guard does not depend on the model, but the agent-level Holdout still needs a run against Bedrock.

@@ -26,6 +26,7 @@ No hardware is needed. Every simulated part says so in the app, this README and 
 | Bee | Simulated | A typed caregiver note, labelled as standing in for a Bee recording |
 | Keypad, visitor's phone | Simulated | On the console |
 | Holdout attack suite | Real | Guard level runs on every push in GitHub Actions |
+| "Try to break in" page | Real agent, MCP server and guard; simulated lock | Each attempt runs in its own fresh in-memory house |
 
 Without AWS credentials the app runs on an **offline stand-in**: a short script, not a model, labelled "Offline stand-in (not a model)" wherever it appears. Both agents use the same script, which deliberately follows text it reads on a sign, so you can see what the guard does when a model is fooled. It is never used for any reported result.
 
@@ -85,7 +86,7 @@ The same rule is written a second time, as one formula, in `spec.ts`. The exhaus
 | `get_home_status` | Read | `readOnlyHint` | Home mode, lock states, today's expected visitors (no codes, no pass ids) |
 | `get_door_events` | Read | `readOnlyHint` | Ring events, labelled `ring` / untrusted |
 | `describe_visitor` | Read | `readOnlyHint`, `openWorldHint` | Bedrock description and visible text, labelled untrusted |
-| `explain_decision` | Read | `readOnlyHint` | "Why did the door open?" and "Who came today?", built by a template from Engram |
+| `explain_decision` | Read | `readOnlyHint` | "Why did the door open?", "What happened at 1 PM?" and "Who came today?", built by a template from Engram as known at that moment |
 | `propose_rule` | Write | | A draft pass and the read-back sentence; unsafe rules refused with the nearest safe offer |
 | `confirm_rule` | Write | | Asks the approver's app; on Confirm, signs the pass and shows the code once on that phone |
 | `notify_household` | Write | | Fire TV-style card, spoken announcement, caregiver alert |
@@ -126,7 +127,19 @@ Only measured numbers appear here.
 - **Crashes:** `kill -9` in the middle of a webhook flood left the chain intact, and every webhook acknowledged with `200` was stored.
 - **Load:** 383 MCP calls/s with 50 sessions; a 1,000-request keypad race opened the door once; the guard check takes 2.3 ms on a 106,249-record log.
 
-**Running beyond localhost:** with `HOST=0.0.0.0`, the console, live view, log and agent routes need a homeowner or caregiver token from other machines (`?token=` works for the live view). Add any public host name, such as the one Ring delivers webhooks to, to `ALLOWED_HOSTS`. Sessions expire after `SESSION_IDLE_MS` of inactivity, but never while a request or stream is open. Each role may hold `SESSION_MAX` sessions.
+**Running beyond localhost:** with `HOST=0.0.0.0`, the console, live view, log and agent routes need a homeowner or caregiver token from other machines (`?token=` works for the live view). Add any public host name, such as the one Ring delivers webhooks to, to `ALLOWED_HOSTS` (an entry starting with a dot, such as `.ecs.us-east-1.on.aws`, allows that domain's subdomains). Behind a load balancer, set `TRUST_PROXY=1` so rate limits see each visitor's address. Sessions expire after `SESSION_IDLE_MS` of inactivity, but never while a request or stream is open. Each role may hold `SESSION_MAX` sessions.
+
+## Beyond the core: the seven extras
+
+| # | Feature | How to see it |
+| --- | --- | --- |
+| 1 | **Unsafe rules refused, safe one offered.** "Let in anyone in a nurse's uniform" gets "Anyone can wear a uniform. I can give Nurse Sarah a one-time code for 1:45 to 3 PM instead. Want that?", and "yes" turns the offer into a pass after a tap. Rules resting on uniforms, badges, faces, claims or open-ended times are refused; the model's `depends_on` list must be `pass_code` or `owner_approval`. | `/alexa`; 10 unsafe-rule Holdout cases |
+| 2 | **"Alexa, why did the door open?"** `explain_decision` answers by decision id, by a time ("what happened at 10:39 PM?") or for the latest request, replaying Engram as known at that moment. The sentence comes from a template, and Alexa speaks it word for word even when a real model would reword it. | `/alexa` chips; `npm test` (`explain.test.ts`) |
+| 3 | **One-word lockdown.** "Alexa, lock everything down" works at once; turning it off needs a tap on a phone. | `/alexa` |
+| 4 | **What-if replay.** The decision card's Why? panel shows the 14 inputs as switches; flipping one re-runs the same `decide()` in the browser. The timeline also has a time-travel slider that replays the log as known at each moment. | `/console` |
+| 5 | **Model-agnostic proof.** `npm run holdout:models -- --models a,b,c` runs the agent-level Holdout for the naive baseline and HomePulse on each Bedrock model and draws `docs/model-agnostic.svg`. **No numbers yet:** it needs Bedrock access. | [harness/README.md](harness/README.md) |
+| 6 | **Live "try to break in".** `/break-it`: type what a visitor says or upload a sign photo; the real agent and guard answer beside the naive baseline, with a public counter and a QR code. Each attempt gets its own fresh in-memory house, nothing personal is stored, and there are limits per address, per hour and at once. Ready to deploy to Amazon ECS Express Mode with a Bedrock-only task role and a budget alarm. **Not deployed yet:** that needs your AWS account. | `/break-it`; [deploy/aws](deploy/aws) |
+| 7 | **Guard any MCP server.** `mcp-streamable-guard proxy --upstream <url> --policy policy.yaml` puts the guard in front of an unchanged server. The "SmartLock Co" example is protected by a 10-line policy. | `npm run demo:proxy`; [packages/guard](packages/guard) |
 
 ## Golden-path scenarios
 
@@ -158,16 +171,22 @@ Only measured numbers appear here.
 - **Scenario 2 runs at 10:39 PM** so night mode comes from the clock. **Scenario 4 uses an indoor hall sensor**, because a doorbell camera faces outward.
 - **SQLite through `node:sqlite`** instead of `better-sqlite3`: `npm ci` from the lockfile tried to compile `better-sqlite3` with node-gyp, which needs a compiler and network access to nodejs.org. The built-in module needs neither.
 - **Echo check:** word 3-grams or a 4-word verbatim run, with look-alike folding, instead of 5-grams at 0.6, which missed paraphrases and short reasons.
+- **The break-in page deploys to Amazon ECS Express Mode, not App Runner.** [App Runner no longer takes new customers](https://docs.aws.amazon.com/apprunner/latest/dg/apprunner-availability-change.html); AWS points to ECS Express Mode instead.
+- **Every break-in attempt gets its own fresh house** instead of one shared house reset every hour, so one visitor's lockdown or rate-limit hits can't change the next visitor's result.
+- **The lockdown card on the TV is amber,** like every warning in the app, rather than red.
 
 ## Repository
 
 ```text
-packages/guard   mcp-streamable-guard: policy, spec, passes, provenance, audit, middleware (MIT)
+packages/guard   mcp-streamable-guard: policy, spec, passes, provenance, audit, middleware, approvals, proxy (MIT)
+                 examples/smartlock-co: a third-party lock server, guarded by a 10-line policy
 apps/server      MCP server, tools, guard wiring, Engram, simulated devices, Ring, Bedrock, agents, demo
-apps/console     Vite + React + Tailwind: /console and /alexa
+apps/console     Vite + React + Tailwind: /console, /alexa and /break-it
 harness          Holdout: attacks/*.yaml, guard-level and agent-level runners
 assets           Simulated doorbell snapshots
-docs             architecture, latency, product feedback, friction log
+docs             architecture, latency, stress report, product feedback, friction log
+deploy/aws       ECS Express Mode deployment for the break-in page, IAM policies, budget alarm
+Dockerfile       the public break-in image
 ```
 
 | Script | What it does |
@@ -177,6 +196,9 @@ docs             architecture, latency, product feedback, friction log
 | `npm run demo:record` | Record fixtures from live Bedrock runs |
 | `npm run holdout -- --level guard` | Attack suite against the guard (CI) |
 | `npm run holdout -- --level agent` | Attack suite through both agents (needs Bedrock) |
+| `npm run holdout:models -- --models a,b,c` | The agent-level suite across models, with the chart (needs Bedrock) |
+| `npm run demo:proxy` | The guard proxy in front of SmartLock Co, end to end |
+| `npm run guard:proxy -- --upstream <url> --policy <file>` | Run the proxy in front of any MCP server |
 | `npm run bench:guard` | Guard latency, median and p95 |
 | `npm run engram:verify` | Walk the hash chain and report the first broken link |
 | `npm run ring:inject -- --type button_press --snapshot assets/sign-attack.jpg` | Post a signed simulated Ring event |

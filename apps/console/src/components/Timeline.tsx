@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { fmtTime, getJson, type AgentEvent, type EngramRecord, type State } from "../lib/api";
 import { describe } from "./DecisionCard";
 import { Panel } from "./Panels";
@@ -14,9 +14,36 @@ export function Timeline({ state }: { state: State }) {
 
   const pick = async (v: string) => {
     setAsOf(v);
+    setPos(null);
     if (!v) return setReplay(null);
     // The picker is in the browser's zone; the server compares instants.
     setReplay(await getJson<EngramRecord[]>(`/api/engram?as_of=${encodeURIComponent(new Date(v).toISOString())}`));
+  };
+
+  // Time-travel scrubber: one stop per moment something became known; the far right is live.
+  const marks = useMemo(() => [...new Set(live.map((r) => r.t_known))].sort(), [live]);
+  const [pos, setPos] = useState<number | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (timer.current) clearTimeout(timer.current);
+  }, []);
+  const scrub = (i: number) => {
+    if (timer.current) clearTimeout(timer.current);
+    if (i >= marks.length - 1) {
+      setPos(null);
+      setAsOf("");
+      setReplay(null);
+      return;
+    }
+    setPos(i);
+    const t = marks[i];
+    // Replay from the server's log, not the page's copy: the same query the Why? panel uses.
+    timer.current = setTimeout(() => {
+      void getJson<EngramRecord[]>(`/api/engram?as_of=${encodeURIComponent(t)}`).then((r) => {
+        setAsOf(t);
+        setReplay(r);
+      });
+    }, 120);
   };
   const check = async () => {
     const r = await getJson<{ ok: boolean; count: number; brokenAt?: number; why?: string }>("/api/engram/verify");
@@ -41,8 +68,27 @@ export function Timeline({ state }: { state: State }) {
         </div>
       }
     >
+      {marks.length > 1 && (
+        <div className="mb-3 flex items-center gap-3">
+          <label htmlFor="scrub" className="text-xs text-muted whitespace-nowrap">
+            Time travel
+          </label>
+          <input
+            id="scrub"
+            type="range"
+            min={0}
+            max={marks.length - 1}
+            step={1}
+            value={pos ?? marks.length - 1}
+            onChange={(e) => scrub(Number(e.target.value))}
+            className="flex-1 accent-[#6cb6ff]"
+            aria-valuetext={pos === null ? "Live" : `As known at ${fmtTime(marks[pos], state.tz, true)}`}
+          />
+          <span className="text-xs font-mono text-ink w-24 text-right">{pos === null ? "Live" : fmtTime(marks[pos], state.tz, true)}</span>
+        </div>
+      )}
       {verify && <p className="text-sm mb-2 text-muted">{verify}</p>}
-      {replay && <p className="text-sm mb-2 text-sky">Replaying {replay.length} records known by {new Date(asOf).toLocaleString()}.</p>}
+      {replay && <p className="text-sm mb-2 text-sky">Replaying {replay.length} records known by {fmtTime(asOf, state.tz, true)}: exactly what HomePulse knew then.</p>}
       <ol className="space-y-1 max-h-[340px] overflow-y-auto pr-1">
         {records.map((r) => (
           <li key={r.id} className="grid grid-cols-[40px_64px_minmax(0,1fr)] gap-2 text-sm items-baseline break-words">

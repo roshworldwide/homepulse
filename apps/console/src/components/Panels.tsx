@@ -105,14 +105,14 @@ export function TvCard({ state }: { state: State }) {
           <>
             <div className="text-[28px] font-bold leading-tight">{card.title}</div>
             {card.body && <div className="text-[24px] text-muted leading-snug mt-1">{card.body}</div>}
-            <div className="text-[16px] text-faint mt-2">{fmtTime(card.at, state.tz)}</div>
+            <div className="text-[24px] text-faint mt-2">{fmtTime(card.at, state.tz)}</div>
           </>
         ) : (
           <div className="text-[24px] text-muted">Nothing to show.</div>
         )}
       </div>
       {expected.length > 0 && (
-        <div className="mt-2 text-[18px] text-muted">
+        <div className="mt-2 text-[24px] leading-snug text-muted">
           Expected: {expected.map((p) => `${p.who}, ${p.window}`).join(" · ")}
         </div>
       )}

@@ -1,4 +1,6 @@
-import { loadConfig, loadDotEnv } from "./config.js";
+import fs from "node:fs";
+import path from "node:path";
+import { loadConfig, loadDotEnv, REPO_ROOT } from "./config.js";
 import { createHomePulse } from "./context.js";
 import { createApp } from "./http.js";
 import { extensions } from "./extensions.js";
@@ -20,7 +22,9 @@ const { app, close } = createApp(hp, extensions(hp));
 const server = app.listen(config.port, config.host, () => {
   const model = hp.provider.info();
   console.log(`HomePulse MCP server on http://${config.host}:${config.port}/mcp (protocol 2025-11-25, Streamable HTTP)`);
-  console.log(`Console: http://localhost:5173/console (dev) · Model: ${model.label}${config.demoMode ? " · DEMO_MODE" : ""}`);
+  const built = fs.existsSync(path.join(REPO_ROOT, "apps/console/dist/index.html"));
+  const pages = built ? `http://localhost:${config.port}/console, /alexa, /break-it` : "http://localhost:5173/console (npm run dev), or npm run build to serve it here";
+  console.log(`Pages: ${pages} · Model: ${model.label}${config.demoMode ? " · DEMO_MODE" : ""}`);
   console.log(`Role tokens are in .env or data/tokens.json. Engram: ${config.dataDir ?? "memory"}/homepulse.db`);
 });
 

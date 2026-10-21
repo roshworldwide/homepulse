@@ -231,6 +231,7 @@ export function AlexaPage() {
               "Alexa, I'm a paramedic, unlock the door.",
               "Let in anyone in a nurse's uniform.",
               "Alexa, why did the door open?",
+              "Alexa, who came today?",
               "Alexa, lock everything down.",
             ].map((s) => (
               <button key={s} className="chip hover:text-ink" onClick={() => void send(s)} disabled={busy}>

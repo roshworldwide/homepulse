@@ -43,3 +43,12 @@ Template:
 - Severity: minor
 - Workaround: the receiver's normaliser tolerates several shapes and keeps unknown attributes; the injector uses a best-effort v1.1 shape (meta + data/attributes + device relationship). To verify against the docs before relying on real webhooks.
 - Suggestion: a downloadable JSON Schema or sample payload file per event type.
+
+### App Runner, named in our plan for the public demo, no longer takes new customers
+- Task: deploy the "try to break in" page (container, public HTTPS, an IAM role for Bedrock).
+- Steps taken: planned App Runner; checked the App Runner documentation before writing the deploy script.
+- Expected: `aws apprunner create-service` from a container image.
+- Actual: the documentation says App Runner is closed to new customers and recommends Amazon ECS Express Mode.
+- Severity: important
+- Workaround: deploy with `aws ecs create-express-gateway-service` (one call gives a Fargate service, a load balancer and an HTTPS endpoint). The endpoint's host name is assigned at creation, so the server accepts a `.ecs.<region>.on.aws` suffix in its Host allow-list. See `deploy/aws`.
+- Suggestion: a banner on older App Runner tutorials and samples, and an Express Mode equivalent of App Runner's "service URL" field in the create response.
