@@ -9,3 +9,5 @@ apps/console/dist
 packages/guard/dist
 docs/stress-load-*.json
 *.log
+e2e-results
+e2e-report

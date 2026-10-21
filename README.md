@@ -45,6 +45,7 @@ npm ci
 cp .env.example .env
 npm run demo -- --all      # the four golden-path scenarios end to end, no AWS needed
 npm test                   # unit tests and the 16,384-case guard test
+npm run test:e2e           # the pages in a real browser (first time: npx playwright install chromium)
 ```
 
 Run the server and console:
@@ -189,6 +190,7 @@ packages/guard   mcp-streamable-guard: policy, spec, passes, provenance, audit, 
                  examples/smartlock-co: a third-party lock server, guarded by a 10-line policy
 apps/server      MCP server, tools, guard wiring, Engram, simulated devices, Ring, Bedrock, agents, demo
 apps/console     Vite + React + Tailwind on the Rosh 27 design system: /console, /alexa and /break-it
+e2e              Playwright browser tests for the three pages, with axe accessibility checks
 harness          Holdout: attacks/*.yaml, guard-level and agent-level runners
 assets           Simulated doorbell snapshots
 docs             architecture, screens, latency, stress report, product feedback, friction log
@@ -199,6 +201,7 @@ Dockerfile       the public break-in image
 | Script | What it does |
 | --- | --- |
 | `npm test` | All unit and integration tests, including the 16,384-case guard test |
+| `npm run test:e2e` | The three pages in a real browser: all four scenarios, Why? and what-if, time travel, Alexa+, a break-in attempt, phone layout and an accessibility scan in light and dark (first time: `npx playwright install chromium`) |
 | `npm run demo -- --all` | Four scenarios end to end |
 | `npm run demo:record` | Record fixtures from live Bedrock runs |
 | `npm run holdout -- --level guard` | Attack suite against the guard (CI) |

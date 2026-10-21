@@ -70,7 +70,7 @@ export function Narration({ captions }: { captions: string[] }) {
     <Card aria-label="Narration">
       <CardHeader title="Narration" caption="What just happened, in order" />
       {captions.length === 0 ? (
-        <p className="mt-3 text-footnote text-label-2">Run a scenario from the sidebar, or press 1 to 4, and each step is narrated here.</p>
+        <p className="mt-3 text-footnote text-label-2">Pick one of the four scenarios, or press 1 to 4, and each step is narrated here.</p>
       ) : (
         <ol className={`relative mt-3 space-y-2.5 ${captions.length > 1 ? "before:absolute before:bottom-2.5 before:left-[3.5px] before:top-2.5 before:w-px before:bg-sep" : ""}`} aria-live="polite">
           {captions.map((c, i) => {

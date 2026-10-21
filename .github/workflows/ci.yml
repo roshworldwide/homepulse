@@ -31,3 +31,24 @@ jobs:
         run: npm run demo:proxy
       - name: Load test (concurrency, keypad race, webhook flood, large log)
         run: npm run stress:load -- --prefill 20000
+
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+      - name: Console, Alexa+ and break-in pages in a real browser (scenarios, what-if, time travel, accessibility)
+        run: npm run test:e2e
+      - name: Keep the report when something fails
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report
+          path: e2e-report
+          retention-days: 7

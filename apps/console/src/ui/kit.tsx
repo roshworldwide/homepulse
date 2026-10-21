@@ -12,9 +12,8 @@ export type Tone = "positive" | "caution" | "alarm" | "info" | "tint" | "neutral
 export function Icon({ name, fill, weight, size, className = "", label, style }: { name: IconName; fill?: boolean; weight?: number; size?: number; className?: string; label?: string; style?: CSSProperties }) {
   const s = { ...(size ? { fontSize: size } : {}), ...(fill ? { "--icon-fill": 1 } : {}), ...(weight ? { "--icon-wght": weight } : {}), ...style } as CSSProperties;
   return (
-    <span className={`icon ${className}`} style={s} aria-hidden={label ? undefined : true} role={label ? "img" : undefined} aria-label={label}>
-      {String.fromCodePoint(ICON_POINTS[name])}
-    </span>
+    // The glyph is drawn by CSS (::before), so it never ends up in copied text or text matching.
+    <span className={`icon ${className}`} style={s} data-glyph={String.fromCodePoint(ICON_POINTS[name])} aria-hidden={label ? undefined : true} role={label ? "img" : undefined} aria-label={label} />
   );
 }
 

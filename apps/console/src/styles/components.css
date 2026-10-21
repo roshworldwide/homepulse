@@ -73,6 +73,9 @@
     font-variation-settings: "FILL" var(--icon-fill, 0), "wght" var(--icon-wght, 400);
     -webkit-font-smoothing: antialiased;
   }
+  .icon::before {
+    content: attr(data-glyph);
+  }
 
   /* ---------- Rosh Glass: shadow, backdrop, tint, sheen, rim, content ---------- */
   .glass {
@@ -1292,15 +1295,17 @@
     transform: translateY(-52%);
     font-size: clamp(260px, 44vw, 540px);
     line-height: 1;
-    background: linear-gradient(170deg, #fafbf6 0%, #e2d2be 30%, #a98d5f 62%, #fafbf6 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
     opacity: 0.9;
     pointer-events: none;
     filter: drop-shadow(0 20px 40px rgba(37, 32, 47, 0.35));
     --icon-fill: 1;
     --icon-wght: 300;
+  }
+  .hero-glyph::before {
+    background: linear-gradient(170deg, #fafbf6 0%, #e2d2be 30%, #a98d5f 62%, #fafbf6 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
   .stat-value {
     font-size: 44px;

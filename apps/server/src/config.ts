@@ -98,7 +98,9 @@ function persisted(dataDir: string | null, file: string, keys: string[], given: 
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env, opts: { dataDir?: string | null } = {}): Config {
-  const dataDir = opts.dataDir === undefined ? path.join(REPO_ROOT, "data") : opts.dataDir;
+  // HOMEPULSE_DATA_DIR moves the data folder; "memory" keeps everything in memory (a fresh house per start).
+  const fromEnv = env.HOMEPULSE_DATA_DIR?.trim();
+  const dataDir = opts.dataDir !== undefined ? opts.dataDir : fromEnv === "memory" ? null : fromEnv ? path.resolve(fromEnv) : path.join(REPO_ROOT, "data");
   const tokens = persisted(dataDir, "tokens.json", ["homeowner", "caregiver", "agent"], {
     homeowner: env.HOMEOWNER_TOKEN,
     caregiver: env.CAREGIVER_TOKEN,
