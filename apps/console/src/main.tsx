@@ -1,14 +1,20 @@
-import { StrictMode } from "react";
+import { StrictMode, type ComponentType } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
-import { BreakItPage } from "./BreakIt";
-import { AlexaPage, ConsolePage } from "./pages";
 
+// One bundle per page: the public break-in page never downloads the MCP client the phones use.
 const path = window.location.pathname.replace(/\/+$/, "");
-const Page = path === "/alexa" ? AlexaPage : path === "/break-it" ? BreakItPage : ConsolePage;
+const load: Promise<ComponentType> =
+  path === "/alexa"
+    ? import("./pages/Alexa").then((m) => m.AlexaPage)
+    : path === "/break-it"
+      ? import("./pages/BreakIt").then((m) => m.BreakItPage)
+      : import("./pages/Console").then((m) => m.ConsolePage);
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <Page />
-  </StrictMode>,
+void load.then((Page) =>
+  createRoot(document.getElementById("root")!).render(
+    <StrictMode>
+      <Page />
+    </StrictMode>,
+  ),
 );

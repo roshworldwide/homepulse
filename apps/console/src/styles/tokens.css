@@ -1,0 +1,205 @@
+/*
+ * Rosh 27 tokens (v27.0) as HomePulse uses them.
+ * Components reference roles (bg, label, fill, status, tint), never raw hues.
+ * Signature tint: Champagne. Light and dark resolve through the same roles.
+ */
+
+@font-face {
+  font-family: "Geist";
+  src: url("../fonts/geist.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Geist Mono";
+  src: url("../fonts/geist-mono.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Newsreader";
+  src: url("../fonts/newsreader-italic.woff2") format("woff2");
+  font-weight: 200 800;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Material Symbols Rounded";
+  src: url("../fonts/material-symbols-rounded.woff2") format("woff2");
+  font-weight: 100 700;
+  font-style: normal;
+  font-display: block;
+}
+
+:root {
+  color-scheme: light;
+
+  --rosh-sans: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --rosh-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --rosh-serif: "Newsreader", Georgia, serif;
+
+  /* Tint: Champagne */
+  --tint: #8a6a3a;
+  --tint-fill: #8a6a3a;
+  --tint-soft: rgba(138, 106, 58, 0.12);
+  --tint-glass: rgba(138, 106, 58, 0.18);
+  --on-tint: #ffffff;
+  --selection: rgba(138, 106, 58, 0.22);
+
+  /* Backgrounds */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f4f3f0;
+  --bg-tertiary: #ffffff;
+  --bg-elevated: #ffffff;
+  --bg-inverse: #0b0b0c;
+
+  /* Labels */
+  --label-primary: #0b0b0c;
+  --label-secondary: rgba(11, 11, 12, 0.66);
+  --label-tertiary: rgba(11, 11, 12, 0.46);
+  --label-quaternary: rgba(11, 11, 12, 0.26);
+  --label-inverse: #f5f5f7;
+
+  /* Fills, separators, overlays */
+  --fill-primary: rgba(11, 11, 12, 0.14);
+  --fill-secondary: rgba(11, 11, 12, 0.08);
+  --fill-tertiary: rgba(11, 11, 12, 0.05);
+  --fill-quaternary: rgba(11, 11, 12, 0.03);
+  --separator: rgba(11, 11, 12, 0.12);
+  --separator-strong: rgba(11, 11, 12, 0.22);
+  --overlay-hover: rgba(11, 11, 12, 0.04);
+  --overlay-press: rgba(11, 11, 12, 0.08);
+  --scrim: rgba(10, 10, 12, 0.28);
+  --thumb: #ffffff;
+
+  /* Status: always paired with a glyph or a word */
+  --positive: #1b7a45;
+  --caution: #9a6200;
+  --alarm: #c8102e;
+  --info: #1f5fd6;
+  --positive-soft: rgba(27, 122, 69, 0.11);
+  --caution-soft: rgba(154, 98, 0, 0.12);
+  --alarm-soft: rgba(200, 16, 46, 0.09);
+  --info-soft: rgba(31, 95, 214, 0.1);
+
+  /* Rosh Glass: one material, five densities */
+  --glass-shadow: 0 1px 3px rgba(28, 20, 12, 0.08), 0 8px 28px rgba(28, 20, 12, 0.12);
+  --glass-sheen: linear-gradient(160deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 42%);
+  --glass-top: rgba(255, 255, 255, 0.95);
+  --glass-clear: rgba(255, 255, 255, 0.16);
+  --glass-mist: rgba(255, 255, 255, 0.36);
+  --glass-fog: rgba(255, 255, 255, 0.58);
+  --glass-marine: rgba(250, 249, 247, 0.78);
+  --glass-opaque: #f8f7f5;
+  --glass-edge-clear: rgba(255, 255, 255, 0.55);
+  --glass-edge-mist: rgba(255, 255, 255, 0.6);
+  --glass-edge-fog: rgba(255, 255, 255, 0.7);
+  --glass-edge-marine: rgba(255, 255, 255, 0.75);
+
+  /* Elevation */
+  --elevation-1: 0 1px 2px rgba(28, 20, 12, 0.06), 0 0 0 1px rgba(28, 20, 12, 0.04);
+  --elevation-2: 0 2px 6px rgba(28, 20, 12, 0.06), 0 6px 16px rgba(28, 20, 12, 0.07);
+  --elevation-3: 0 2px 6px rgba(28, 20, 12, 0.06), 0 10px 28px rgba(28, 20, 12, 0.12);
+  --elevation-4: 0 4px 12px rgba(28, 20, 12, 0.08), 0 20px 48px rgba(28, 20, 12, 0.16);
+  --elevation-5: 0 8px 24px rgba(28, 20, 12, 0.1), 0 36px 90px rgba(28, 20, 12, 0.24);
+
+  /* Aura edge: intelligence features and one hero card per page */
+  --aura: linear-gradient(90deg, #88a0f2 0%, #fafbf6 28%, #f2c84d 58%, #cf9b4c 78%, #a2604a 100%);
+  --aura-conic: conic-gradient(from 0deg, #88a0f2, #fafbf6, #f2c84d, #cf9b4c, #a2604a, #88a0f2);
+  --aura-bloom: -24px 0 60px -14px rgba(136, 160, 242, 0.3), 0 18px 50px -22px rgba(242, 200, 77, 0.26), 24px 0 60px -14px rgba(162, 96, 74, 0.24);
+
+  /* Golden Gate silk: brand moments only */
+  --silk: radial-gradient(160% 120% at 105% 110%, rgba(0, 0, 0, 0) 0 36%, rgba(255, 255, 255, 0.7) 37%, rgba(0, 0, 0, 0) 39.5%),
+    radial-gradient(150% 110% at 115% 125%, #9ba5ad 0 30%, rgba(155, 165, 173, 0) 30.6%),
+    radial-gradient(130% 120% at 100% 130%, #c9c3cf 0 44%, rgba(201, 195, 207, 0) 44.6%),
+    radial-gradient(90% 80% at 20% 10%, #f4eadc 0%, rgba(244, 234, 220, 0) 60%),
+    linear-gradient(135deg, #c9ae84 0%, #e2d2be 30%, #f1e7da 50%, #d6c9c4 70%, #b8bec6 100%);
+  --mark: linear-gradient(160deg, #e2d2be 0%, #a98d5f 100%);
+
+  /* Code blocks and the TV are dark in both appearances */
+  --code-bg: #0b0b0c;
+  --code-label: #f5f5f7;
+  --code-label-2: rgba(245, 245, 247, 0.62);
+
+  /* Motion */
+  --duration-instant: 90ms;
+  --duration-quick: 150ms;
+  --duration-base: 240ms;
+  --duration-gentle: 340ms;
+  --duration-slow: 480ms;
+  --duration-epic: 720ms;
+  --ease-standard: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-exit: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-swap: cubic-bezier(0.65, 0, 0.35, 1);
+  --spring-snap: linear(0, 0.014 2.1%, 0.049 4.2%, 0.1 6.3%, 0.161 8.3%, 0.227 10.4%, 0.296 12.5%, 0.364 14.6%, 0.431 16.7%, 0.494 18.8%, 0.553 20.8%, 0.609 22.9%, 0.659 25%, 0.705 27.1%, 0.746 29.2%, 0.783 31.3%, 0.815 33.3%, 0.844 35.4%, 0.868 37.5%, 0.89 39.6%, 0.909 41.7%, 0.925 43.8%, 0.938 45.8%, 0.95 47.9%, 0.96 50%, 0.968 52.1%, 0.975 54.2%, 0.98 56.3%, 0.985 58.3%, 0.989 60.4%, 0.992 62.5%, 0.994 64.6%, 0.996 66.7%, 0.998 68.8%, 0.999 70.8%, 1 72.9%, 1 75%, 1.001 77.1%, 1.001 79.2%, 1.001 81.3%, 1.001 83.3%, 1.002 85.4%, 1.002 87.5%, 1.001 89.6%, 1.001 91.7%, 1.001 93.8%, 1.001 95.8%, 1.001 97.9%, 1);
+  --spring-glide: linear(0, 0.016 2.1%, 0.058 4.2%, 0.115 6.3%, 0.182 8.3%, 0.252 10.4%, 0.323 12.5%, 0.392 14.6%, 0.457 16.7%, 0.519 18.8%, 0.575 20.8%, 0.627 22.9%, 0.673 25%, 0.715 27.1%, 0.752 29.2%, 0.785 31.3%, 0.814 33.3%, 0.84 35.4%, 0.862 37.5%, 0.881 39.6%, 0.898 41.7%, 0.913 43.8%, 0.925 45.8%, 0.936 47.9%, 0.945 50%, 0.953 52.1%, 0.96 54.2%, 0.966 56.3%, 0.971 58.3%, 0.976 60.4%, 0.979 62.5%, 0.983 64.6%, 0.985 66.7%, 0.987 68.8%, 0.989 70.8%, 0.991 72.9%, 0.992 75%, 0.994 77.1%, 0.995 79.2%, 0.995 81.3%, 0.996 83.3%, 0.997 85.4%, 0.997 87.5%, 0.998 89.6%, 0.998 91.7%, 0.998 93.8%, 0.999 95.8%, 0.999 97.9%, 1);
+  --spring-bounce: linear(0, 0.021 2.1%, 0.078 4.2%, 0.157 6.3%, 0.252 8.3%, 0.353 10.4%, 0.456 12.5%, 0.555 14.6%, 0.648 16.7%, 0.732 18.8%, 0.806 20.8%, 0.869 22.9%, 0.922 25%, 0.965 27.1%, 0.999 29.2%, 1.024 31.3%, 1.042 33.3%, 1.054 35.4%, 1.061 37.5%, 1.063 39.6%, 1.063 41.7%, 1.059 43.8%, 1.055 45.8%, 1.049 47.9%, 1.043 50%, 1.036 52.1%, 1.03 54.2%, 1.024 56.3%, 1.018 58.3%, 1.013 60.4%, 1.009 62.5%, 1.006 64.6%, 1.003 66.7%, 1.001 68.8%, 0.999 70.8%, 0.998 72.9%, 0.997 75%, 0.996 77.1%, 0.996 79.2%, 0.996 81.3%, 0.996 83.3%, 0.996 85.4%, 0.997 87.5%, 0.997 89.6%, 0.998 91.7%, 0.998 93.8%, 0.998 95.8%, 0.999 97.9%, 1);
+}
+
+/*
+ * Dark appearance. index.html resolves the person's choice (Auto follows the
+ * system) into data-theme before first paint, so there is one dark block.
+ */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --tint: #e2c28a;
+  --tint-fill: #8a6a3a;
+  --tint-soft: rgba(226, 194, 138, 0.14);
+  --tint-glass: rgba(226, 194, 138, 0.18);
+  --selection: rgba(226, 194, 138, 0.3);
+  --bg-primary: #0a0a0c;
+  --bg-secondary: #141417;
+  --bg-tertiary: #1c1c20;
+  --bg-elevated: #202025;
+  --bg-inverse: #f5f5f7;
+  --label-primary: #f5f5f7;
+  --label-secondary: rgba(245, 245, 247, 0.7);
+  --label-tertiary: rgba(245, 245, 247, 0.46);
+  --label-quaternary: rgba(245, 245, 247, 0.26);
+  --label-inverse: #0b0b0c;
+  --fill-primary: rgba(245, 245, 247, 0.24);
+  --fill-secondary: rgba(245, 245, 247, 0.15);
+  --fill-tertiary: rgba(245, 245, 247, 0.09);
+  --fill-quaternary: rgba(245, 245, 247, 0.06);
+  --separator: rgba(245, 245, 247, 0.14);
+  --separator-strong: rgba(245, 245, 247, 0.26);
+  --overlay-hover: rgba(255, 255, 255, 0.06);
+  --overlay-press: rgba(255, 255, 255, 0.12);
+  --scrim: rgba(0, 0, 0, 0.5);
+  --thumb: #3a3a41;
+  --positive: #4fd68a;
+  --caution: #ffb547;
+  --alarm: #ff5c72;
+  --info: #6fa8ff;
+  --positive-soft: rgba(79, 214, 138, 0.14);
+  --caution-soft: rgba(255, 181, 71, 0.14);
+  --alarm-soft: rgba(255, 92, 114, 0.14);
+  --info-soft: rgba(111, 168, 255, 0.14);
+  --glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 8px 28px rgba(0, 0, 0, 0.42);
+  --glass-sheen: linear-gradient(160deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 42%);
+  --glass-top: rgba(255, 255, 255, 0.16);
+  --glass-clear: rgba(20, 20, 24, 0.18);
+  --glass-mist: rgba(30, 30, 36, 0.32);
+  --glass-fog: rgba(44, 44, 50, 0.5);
+  --glass-marine: rgba(32, 32, 37, 0.78);
+  --glass-opaque: #1c1c20;
+  --glass-edge-clear: rgba(255, 255, 255, 0.16);
+  --glass-edge-mist: rgba(255, 255, 255, 0.16);
+  --glass-edge-fog: rgba(255, 255, 255, 0.16);
+  --glass-edge-marine: rgba(255, 255, 255, 0.14);
+  --elevation-1: 0 0 0 1px rgba(255, 255, 255, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --elevation-2: 0 6px 16px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --elevation-3: 0 10px 28px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  --elevation-4: 0 20px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --elevation-5: 0 36px 90px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --aura-bloom: -24px 0 60px -12px rgba(136, 160, 242, 0.36), 0 -18px 50px -20px rgba(250, 251, 246, 0.16), 0 18px 50px -20px rgba(242, 200, 77, 0.28), 24px 0 60px -12px rgba(162, 96, 74, 0.32);
+  --silk: radial-gradient(160% 120% at 105% 110%, rgba(0, 0, 0, 0) 0 36%, rgba(250, 251, 246, 0.5) 37%, rgba(0, 0, 0, 0) 39.5%),
+    radial-gradient(150% 110% at 115% 125%, #25202f 0 30%, rgba(37, 32, 47, 0) 30.6%),
+    radial-gradient(130% 120% at 100% 130%, #4f5069 0 44%, rgba(79, 80, 105, 0) 44.6%),
+    radial-gradient(120% 140% at -10% 120%, rgba(0, 0, 0, 0) 0 52%, rgba(226, 210, 190, 0.55) 53%, rgba(0, 0, 0, 0) 56%),
+    radial-gradient(90% 80% at 20% 10%, #e2d2be 0%, rgba(226, 210, 190, 0) 60%),
+    linear-gradient(135deg, #7e5d45 0%, #a98d5f 22%, #d0bca5 40%, #927a72 58%, #5e5767 76%, #536576 90%, #9ba5ad 100%);
+}

@@ -1,92 +1,122 @@
 @import "tailwindcss";
+@import "./styles/tokens.css";
+@import "./styles/components.css";
 
+/* Tailwind reads Rosh roles only: no default palette, sizes, radii or breakpoints. */
 @theme {
-  --color-bg: #0b0f17;
-  --color-panel: #121826;
-  --color-panel2: #182033;
-  --color-line: #26324a;
-  --color-ink: #e8ecf4;
-  --color-muted: #a3aec4;
-  --color-faint: #6f7b94;
-  --color-teal: #45c4b0;
-  --color-amber: #f5b83d;
-  --color-sky: #6cb6ff;
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --color-*: initial;
+  --text-*: initial;
+  --breakpoint-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+
+  --breakpoint-sm: 600px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1440px;
+
+  --text-hero: 56px;
+  --text-hero--line-height: 1.04;
+  --text-hero--letter-spacing: -0.032em;
+  --text-hero--font-weight: 700;
+  --text-display: 40px;
+  --text-display--line-height: 1.08;
+  --text-display--letter-spacing: -0.026em;
+  --text-display--font-weight: 700;
+  --text-title-1: 32px;
+  --text-title-1--line-height: 1.12;
+  --text-title-1--letter-spacing: -0.022em;
+  --text-title-1--font-weight: 700;
+  --text-title-2: 26px;
+  --text-title-2--line-height: 1.16;
+  --text-title-2--letter-spacing: -0.018em;
+  --text-title-2--font-weight: 650;
+  --text-title-3: 21px;
+  --text-title-3--line-height: 1.22;
+  --text-title-3--letter-spacing: -0.012em;
+  --text-title-3--font-weight: 600;
+  --text-heading: 17px;
+  --text-heading--line-height: 1.3;
+  --text-heading--letter-spacing: -0.006em;
+  --text-heading--font-weight: 600;
+  --text-body: 16px;
+  --text-body--line-height: 1.45;
+  --text-body--letter-spacing: -0.004em;
+  --text-body-s: 14px;
+  --text-body-s--line-height: 1.42;
+  --text-body-s--letter-spacing: -0.002em;
+  --text-label: 13px;
+  --text-label--line-height: 1.3;
+  --text-label--font-weight: 500;
+  --text-footnote: 13px;
+  --text-footnote--line-height: 1.38;
+  --text-footnote--letter-spacing: 0.002em;
+  --text-caption: 12px;
+  --text-caption--line-height: 1.3;
+  --text-caption--letter-spacing: 0.008em;
+  --text-caption--font-weight: 500;
+  --text-micro: 11px;
+  --text-micro--line-height: 1.2;
+  --text-micro--letter-spacing: 0.02em;
+  --text-micro--font-weight: 600;
+
+  --radius-4: 4px;
+  --radius-6: 6px;
+  --radius-8: 8px;
+  --radius-10: 10px;
+  --radius-12: 12px;
+  --radius-16: 16px;
+  --radius-20: 20px;
+  --radius-24: 24px;
+  --radius-28: 28px;
+  --radius-34: 34px;
+  --radius-capsule: 999px;
 }
 
-html,
-body,
-#root {
-  height: 100%;
-}
+@theme inline {
+  --font-sans: var(--rosh-sans);
+  --font-mono: var(--rosh-mono);
+  --font-serif: var(--rosh-serif);
 
-body {
-  background: var(--color-bg);
-  color: var(--color-ink);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-}
+  --color-tint: var(--tint);
+  --color-tint-fill: var(--tint-fill);
+  --color-tint-soft: var(--tint-soft);
+  --color-on-tint: var(--on-tint);
 
-.panel {
-  background: var(--color-panel);
-  border: 1px solid var(--color-line);
-  border-radius: 14px;
-}
+  --color-surface: var(--bg-primary);
+  --color-canvas: var(--bg-secondary);
+  --color-card: var(--bg-tertiary);
+  --color-elevated: var(--bg-elevated);
+  --color-inverse: var(--bg-inverse);
 
-.label {
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-muted);
-  font-weight: 600;
-}
+  --color-label-1: var(--label-primary);
+  --color-label-2: var(--label-secondary);
+  --color-label-3: var(--label-tertiary);
+  --color-label-4: var(--label-quaternary);
+  --color-label-inverse: var(--label-inverse);
 
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  border-radius: 999px;
-  padding: 1px 8px;
-  font-size: 11px;
-  font-weight: 600;
-  border: 1px solid var(--color-line);
-  color: var(--color-muted);
-  white-space: nowrap;
-}
+  --color-fill-1: var(--fill-primary);
+  --color-fill-2: var(--fill-secondary);
+  --color-fill-3: var(--fill-tertiary);
+  --color-fill-4: var(--fill-quaternary);
+  --color-sep: var(--separator);
+  --color-sep-strong: var(--separator-strong);
 
-.btn {
-  border-radius: 10px;
-  padding: 6px 12px;
-  font-size: 13px;
-  font-weight: 600;
-  border: 1px solid var(--color-line);
-  background: var(--color-panel2);
-  color: var(--color-ink);
-  transition: background 120ms;
-}
-.btn:hover {
-  background: #1f2a42;
-}
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.btn-primary {
-  background: var(--color-teal);
-  color: #062420;
-  border-color: transparent;
-}
-.btn-primary:hover {
-  background: #5ad3bf;
-}
-.btn-warn {
-  background: transparent;
-  color: var(--color-amber);
-  border-color: color-mix(in srgb, var(--color-amber) 55%, transparent);
-}
+  --color-positive: var(--positive);
+  --color-caution: var(--caution);
+  --color-alarm: var(--alarm);
+  --color-info: var(--info);
+  --color-positive-soft: var(--positive-soft);
+  --color-caution-soft: var(--caution-soft);
+  --color-alarm-soft: var(--alarm-soft);
+  --color-info-soft: var(--info-soft);
 
-:focus-visible {
-  outline: 2px solid var(--color-sky);
-  outline-offset: 2px;
+  --color-white: #ffffff;
+
+  --shadow-1: var(--elevation-1);
+  --shadow-2: var(--elevation-2);
+  --shadow-3: var(--elevation-3);
+  --shadow-4: var(--elevation-4);
+  --shadow-5: var(--elevation-5);
 }

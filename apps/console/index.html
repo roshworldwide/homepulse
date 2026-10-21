@@ -2,9 +2,23 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#F4F3F0" />
     <title>HomePulse</title>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230B0F17'/%3E%3Cpath d='M6 16 L16 7 L26 16 V26 H6 Z' fill='none' stroke='%2345C4B0' stroke-width='2.5'/%3E%3Cpath d='M10 19 h3 l2-4 3 7 2-3 h2' fill='none' stroke='%23F5B83D' stroke-width='2'/%3E%3C/svg%3E" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='.35' y2='1'%3E%3Cstop offset='0' stop-color='%23E2D2BE'/%3E%3Cstop offset='1' stop-color='%23A98D5F'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8.5' fill='url(%23g)'/%3E%3Cpath d='M7 15.5 16 8l9 7.5V25H7Z' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linejoin='round'/%3E%3Cpath d='M10 19h3l2-3.5 2.5 6 2-3.5h2.5' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+    <script>
+      // Resolve the appearance before first paint: Auto follows the system.
+      (function () {
+        var pref = "auto";
+        try {
+          pref = localStorage.getItem("homepulse.theme") || "auto";
+        } catch (e) {}
+        var dark = pref === "dark" || (pref !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.dataset.theme = dark ? "dark" : "light";
+        document.documentElement.dataset.themePref = pref;
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
