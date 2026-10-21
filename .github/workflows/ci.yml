@@ -27,5 +27,7 @@ jobs:
         run: npm run build
       - name: Golden-path scenarios in DEMO_MODE (offline stand-in)
         run: npm run demo -- --all
+      - name: Guard proxy in front of an unchanged third-party server (SmartLock Co)
+        run: npm run demo:proxy
       - name: Load test (concurrency, keypad race, webhook flood, large log)
         run: npm run stress:load -- --prefill 20000

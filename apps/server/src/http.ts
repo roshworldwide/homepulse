@@ -225,7 +225,7 @@ export function createApp(hp: HomePulse, ext: Extension[] = []) {
     };
     server.server.oninitialized = () => {
       if (sessionId && (role === "homeowner" || role === "caregiver") && server.server.getClientCapabilities()?.elicitation) {
-        hp.broker.register({ session_id: sessionId, role, server });
+        hp.broker.register({ session_id: sessionId, role, elicitor: server.server });
       }
     };
     await server.connect(transport);
