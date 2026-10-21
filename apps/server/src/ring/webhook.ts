@@ -37,6 +37,14 @@ export function buildRingPayload(opts: { type: string; sub_type?: string | null;
 
 export const ACTED_ON = new Set(["motion_detected", "button_press"]);
 
+function safeAlert(hp: HomePulse, payload: Record<string, unknown>): void {
+  try {
+    hp.engram.append({ kind: "alert", source: "system", payload });
+  } catch {
+    /* the alert itself could not be written */
+  }
+}
+
 /** Same code path for real Ring webhooks and the local injector. Mounted before any JSON parser. */
 export function ringWebhook(hp: HomePulse): Extension {
   const seen = new Set<string>();
@@ -47,29 +55,46 @@ export function ringWebhook(hp: HomePulse): Extension {
         if (!Buffer.isBuffer(body) || !verifyRingSignature(body, req.header("x-signature"), hp.config.ringHmacKey)) {
           return res.status(401).end();
         }
-        res.status(200).end();
         // Labels only: whether this came from the local injector, and which bundled snapshot it carries.
         const simulated = req.header("x-homepulse-injector") === "1";
         const snapshotHeader = req.header("x-homepulse-snapshot");
         const snapshot = simulated && snapshotHeader ? path.basename(snapshotHeader) : null;
-        setImmediate(() => {
-          try {
-            const raw = JSON.parse(body.toString("utf8"));
-            const rid = raw?.meta?.request_id;
-            if (typeof rid === "string") {
-              if (seen.has(rid)) return; // idempotent on meta.request_id
-              seen.add(rid);
-              if (seen.size > 5000) seen.delete(seen.values().next().value as string);
-            }
-            const rec = hp.ring.ingest(raw, { simulated, snapshot });
-            const ev = rec.payload.event as { type: string; sub_type: string | null };
-            if (ACTED_ON.has(ev.type) && (ev.type === "button_press" || ev.sub_type === "human")) {
-              hp.bus.publish({ type: "demo", demo: { event: "door_event", record_id: rec.id } });
-            }
-          } catch (err) {
-            hp.engram.append({ kind: "alert", source: "system", payload: { type: "webhook_parse_error", error: String(err) } });
+        // Store first, then answer: the append is one small synchronous write (well under Ring's
+        // 5-second budget even under a flood), and a 200 then means the event is on disk. Answering
+        // before storing lost the in-flight events when the process was killed.
+        let raw: unknown;
+        try {
+          raw = JSON.parse(body.toString("utf8"));
+        } catch (err) {
+          // Signed but unreadable: keep a record and answer 200 so Ring does not resend it forever.
+          safeAlert(hp, { type: "webhook_parse_error", error: String(err).slice(0, 300) });
+          return res.status(200).end();
+        }
+        const rid = (raw as { meta?: { request_id?: unknown } } | null)?.meta?.request_id;
+        if (typeof rid === "string" && seen.has(rid)) return res.status(200).end(); // idempotent on meta.request_id
+        let rec;
+        try {
+          rec = hp.ring.ingest(raw, { simulated, snapshot });
+        } catch (err) {
+          if ((err as { code?: string })?.code === "ERR_SQLITE_ERROR") {
+            // The database could not take the write right now: answer 503 so Ring resends it later.
+            console.error("[homepulse] could not store a Ring event:", err);
+            return res.status(503).set("Retry-After", "5").end();
           }
-        });
+          // The payload itself cannot be stored (for example nested too deeply): record that, don't retry.
+          safeAlert(hp, { type: "webhook_unstorable", error: String(err).slice(0, 300) });
+          return res.status(200).end();
+        }
+        if (typeof rid === "string") {
+          // Marked seen only once stored, so a redelivery after a failed write is not ignored.
+          seen.add(rid);
+          if (seen.size > 5000) seen.delete(seen.values().next().value as string);
+        }
+        res.status(200).end();
+        const ev = rec.payload.event as { type: string; sub_type: string | null };
+        if (ACTED_ON.has(ev.type) && (ev.type === "button_press" || ev.sub_type === "human")) {
+          setImmediate(() => hp.bus.publish({ type: "demo", demo: { event: "door_event", record_id: rec.id } }));
+        }
       });
     },
   };

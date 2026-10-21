@@ -1,5 +1,5 @@
 import type { HomePulse } from "../context.js";
-import type { Extension } from "../http.js";
+import { rateLimiter, type Extension } from "../http.js";
 import { formatClock } from "../time.js";
 import { redactCodes } from "../guard/home-guard.js";
 import type { AgentService } from "./homepulse.js";
@@ -15,27 +15,15 @@ export function hallSensorPrompt(hp: HomePulse, atMs: number): string {
   return `[hall sensor] Someone is at the front door from inside the house at ${formatClock(atMs, hp.config.tz)}. Night mode is ${night ? "on" : "off"}. No visitors are expected.`;
 }
 
-/** Simple per-address limit for the talk-to-Alexa endpoint. */
-function limiter(max: number, windowMs: number) {
-  const hits = new Map<string, number[]>();
-  return (key: string) => {
-    const now = Date.now();
-    const arr = (hits.get(key) ?? []).filter((t) => now - t < windowMs);
-    arr.push(now);
-    hits.set(key, arr);
-    return arr.length <= max;
-  };
-}
-
 export function agentRoutes(hp: HomePulse, agents: AgentService): Extension {
-  const allow = limiter(30, 60_000);
+  const allow = rateLimiter(30, 60_000);
   return {
     routes(app, json) {
       app.get("/agent/info", (_req, res) => res.json(agents.info()));
 
       /** The simulated Alexa+ page: a spoken (or typed) request goes to both agents. */
       app.post("/agent/turn", json, async (req, res) => {
-        if (!allow(req.ip ?? "?")) return res.status(429).json({ error: "Too many requests" });
+        if (!allow(req.socket.remoteAddress ?? "?")) return res.status(429).json({ error: "Too many requests" });
         const text = String(req.body?.text ?? "").slice(0, 600).trim();
         if (!text) return res.status(400).json({ error: "Say something first." });
         const which = req.body?.agents === "homepulse" || req.body?.agents === "naive" ? req.body.agents : "both";

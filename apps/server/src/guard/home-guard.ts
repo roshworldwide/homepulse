@@ -48,6 +48,8 @@ export interface PhysicalExtra {
   session_id?: string;
   /** The agent's latest message, for the echo explanation only. */
   agent_last_message?: string;
+  /** Engram id of this request's own tool_call record, so it is never counted against its own rate limit. */
+  tool_call_record_id?: number;
 }
 
 export interface Deps {
@@ -78,20 +80,11 @@ export function redactArgs(args: UnlockArgs): Record<string, unknown> {
 
 /** Untrusted text recorded in the last `windowMs` (visitor descriptions, visitor speech, Ring attributes). */
 export function recentOutsideText(engram: Engram, nowMs: number, windowMs = ECHO_WINDOW_MS): string[] {
-  const out: string[] = [];
-  for (const r of engram.eventsBetween(nowMs - windowMs, nowMs, "input")) {
-    if (r.trust !== "untrusted") continue;
-    const t = (r.payload as { outside_text?: unknown }).outside_text;
-    if (Array.isArray(t)) for (const s of t) if (typeof s === "string" && s.trim()) out.push(s);
-  }
-  return out;
+  return engram.outsideTexts(nowMs - windowMs, nowMs);
 }
 
 export function latestDoorEvent(engram: Engram, nowMs: number, windowMs = VISITOR_WINDOW_MS): EngramRecord | undefined {
-  return engram
-    .eventsBetween(nowMs - windowMs, nowMs, "input", "ring")
-    .filter((r) => isPersonEvent(r.payload))
-    .at(-1);
+  return engram.latestPersonEvent(nowMs - windowMs, nowMs);
 }
 
 export function isPersonEvent(payload: Record<string, unknown>): boolean {
@@ -150,9 +143,7 @@ export function createHomeGuard(h: Deps): HomeGuard {
       x.visitor_at_door = latestDoorEvent(h.engram, now) !== undefined;
 
       // Rate: physical requests from the same caller bucket in the last 10 minutes, not counting this one.
-      const prior = h.engram
-        .eventsBetween(now - RATE_WINDOW_MS, now, "tool_call")
-        .filter((r) => r.payload.physical === true && r.payload.bucket === extra.bucket && r.payload.decision_id !== ctx.decision_id).length;
+      const prior = h.engram.countPhysicalCalls(extra.bucket, now - RATE_WINDOW_MS, now, extra.tool_call_record_id ?? -1);
       x.rate_ok = prior < RATE_LIMIT;
 
       if (ctx.args.channel === "voice") notes.push("voice-only request: speaking starts a request but never opens the door by itself");
@@ -192,12 +183,13 @@ export function createHomeGuard(h: Deps): HomeGuard {
         h.engram.append({ kind: "alert", source: "system", payload: { type: "approval_unanswered", decision_id: ctx.decision_id, why: res.why } });
         return;
       }
-      h.approvals.set({ decision_id: ctx.decision_id, approved: res.answer, at: res.at ?? h.clock.now(), role: res.role!, session_id: res.session_id! });
+      // Log first: an approval that is not on record must never count.
       h.engram.append({
         kind: "input",
         source: res.role!,
         payload: { type: "approval", decision_id: ctx.decision_id, approved: res.answer, session_id: res.session_id },
       });
+      h.approvals.set({ decision_id: ctx.decision_id, approved: res.answer, at: res.at ?? h.clock.now(), role: res.role!, session_id: res.session_id! });
       if (!res.answer) h.devices.tv("alert", `${cap(res.role!)} denied the request`, `The ${doorName(door)} stays locked.`);
     },
 
@@ -221,6 +213,7 @@ export function createHomeGuard(h: Deps): HomeGuard {
       const now = h.clock.now();
       const passId = passFor.get(d.decision_id);
       passFor.delete(d.decision_id);
+      h.approvals.delete(d.decision_id);
       const door = doorOf(d.tool);
       h.engram.append({
         kind: "decision",
@@ -261,14 +254,24 @@ export function createHomeGuard(h: Deps): HomeGuard {
   });
 
   async function physical(tool: PhysicalTool, args: UnlockArgs, extra: PhysicalExtra) {
+    try {
+      return await physicalInner(tool, args, extra);
+    } finally {
+      // An approval is bound to one request; once that request is decided it is spent either way.
+      h.approvals.sweep(h.clock.now());
+    }
+  }
+
+  async function physicalInner(tool: PhysicalTool, args: UnlockArgs, extra: PhysicalExtra) {
     const decision_id = h.newId("dec_");
     const now = h.clock.now();
     const source: Source = extra.role === "device" ? "visitor" : extra.role;
-    h.engram.append({
+    const call = h.engram.append({
       kind: "tool_call",
       source,
       payload: { tool, decision_id, physical: true, bucket: extra.bucket, session_id: extra.session_id ?? null, args: redactArgs(args) },
     });
+    extra = { ...extra, tool_call_record_id: call.id };
     // A physical request from the homeowner's or caregiver's own app session is itself the fresh tap.
     if ((extra.role === "homeowner" || extra.role === "caregiver") && extra.session_id) {
       h.approvals.set({ decision_id, approved: true, at: now, role: extra.role, session_id: extra.session_id });
@@ -278,25 +281,32 @@ export function createHomeGuard(h: Deps): HomeGuard {
     if (decision.allow) {
       const door = doorOf(tool);
       h.devices.lockFor(door).unlock(`guard:${decision.decision_id}`, h.config.unlockMs);
-      const t = formatClock(h.clock.now(), h.config.tz);
-      let who: string | null = null;
-      if (decision.path === "pass") {
-        const row = h.engram.findDecision(decision.decision_id);
-        const pid = row?.payload.pass_id as string | undefined;
-        who = pid ? h.passes.get(pid)?.pass.who ?? null : null;
+      effect = { door, state: "unlocked", relocks_in_seconds: Math.round(h.config.unlockMs / 1000), who: null };
+      // The door is open now. Logging and notifications after this point must not turn into an error
+      // that would be reported as "stayed locked"; failures are logged and the allow stands.
+      try {
+        const t = formatClock(h.clock.now(), h.config.tz);
+        let who: string | null = null;
+        if (decision.path === "pass") {
+          const row = h.engram.findDecision(decision.decision_id);
+          const pid = row?.payload.pass_id as string | undefined;
+          who = pid ? h.passes.get(pid)?.pass.who ?? null : null;
+        }
+        effect.who = who;
+        h.engram.append({
+          kind: "effect",
+          source: "system",
+          payload: { type: "door_unlocked", door, decision_id: decision.decision_id, path: decision.path, who, relock_after_ms: h.config.unlockMs, simulated: true },
+        });
+        if (decision.path === "pass") {
+          h.devices.tv("ok", `${who ?? "Expected visitor"} arrived ${t}`, `${cap(doorName(door))} unlocked for ${Math.round(h.config.unlockMs / 1000)} seconds with a one-time pass.`);
+          h.devices.alert("caregiver", `${who ?? "Expected visitor"} arrived`, `${cap(doorName(door))} opened at ${t} with their one-time code.`);
+        } else {
+          h.devices.tv("ok", `${cap(doorName(door))} opened ${t}`, "Approved on the family's phone.");
+        }
+      } catch (err) {
+        console.error("[homepulse] door opened but the follow-up logging failed:", err);
       }
-      h.engram.append({
-        kind: "effect",
-        source: "system",
-        payload: { type: "door_unlocked", door, decision_id: decision.decision_id, path: decision.path, who, relock_after_ms: h.config.unlockMs, simulated: true },
-      });
-      if (decision.path === "pass") {
-        h.devices.tv("ok", `${who ?? "Expected visitor"} arrived ${t}`, `${cap(doorName(door))} unlocked for ${Math.round(h.config.unlockMs / 1000)} seconds with a one-time pass.`);
-        h.devices.alert("caregiver", `${who ?? "Expected visitor"} arrived`, `${cap(doorName(door))} opened at ${t} with their one-time code.`);
-      } else {
-        h.devices.tv("ok", `${cap(doorName(door))} opened ${t}`, "Approved on the family's phone.");
-      }
-      effect = { door, state: "unlocked", relocks_in_seconds: Math.round(h.config.unlockMs / 1000), who };
     }
     return { decision, effect };
   }

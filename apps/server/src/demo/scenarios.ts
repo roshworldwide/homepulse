@@ -129,7 +129,7 @@ export async function runScenario(hp: HomePulse, name: ScenarioName, opts: { bas
     }
   }
 
-  const records = hp.engram.all().filter((r) => r.id > marker);
+  const records = hp.engram.tail(Math.max(1, hp.engram.count() - marker + 1)).filter((r) => r.id > marker);
   out.decisions = records.filter((r) => r.kind === "decision").map((r) => ({ decision_id: String(r.payload.decision_id), verdict: String(r.payload.verdict), reasons: (r.payload.reasons as string[]) ?? [] }));
   out.homepulse_door_opened = records.some((r) => r.payload.type === "door_unlocked");
   out.baseline_door_opened = hp.devices.baselineDoor.history.some((h) => h.state === "unlocked");

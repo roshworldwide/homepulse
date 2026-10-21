@@ -32,11 +32,11 @@ export function offlineDraft(utterance: string, ctx: DraftContext): RuleDraftRaw
   const text = utterance.replace(/^\s*alexa[,!.]?\s*/i, "").trim();
   const lower = text.toLowerCase();
   const whoMatch = /\blet\s+(.+?)\s+(?:in|into|through|come in)\b/i.exec(text) ?? /^(.+?)\s+(?:and .+?\s+)?(?:is |are )?(?:arriving|coming|will come|visiting)\b/i.exec(text);
-  const who = (whoMatch?.[1] ?? "the visitor").replace(/^(?:a|an)\s+/i, (s) => s).trim();
+  const who = (whoMatch?.[1] ?? "the visitor").trim().slice(0, 80) || "the visitor";
   const door = /parcel|package box|delivery box/.test(lower) ? "parcel_box" : "front";
   const allow_at_night = /\b(even at night|at night|overnight)\b/.test(lower);
   const purposeMatch = /\bfor\s+(.+?)(?:[.!?]|,|\s+(?:she|he|they)'?(?:ll| will)\b|$)/i.exec(text);
-  const purpose = purposeMatch ? purposeMatch[1].trim() : null;
+  const purpose = purposeMatch ? purposeMatch[1].trim().slice(0, 120) || null : null;
   const depends_on = UNSAFE.test(text) ? ["appearance_or_claim"] : ["pass_code"];
 
   const now = Date.parse(ctx.now_iso);

@@ -15,12 +15,24 @@ function registerPhysical(tool: PhysicalTool, title: string, description: string
       tool,
       { title, description, inputSchema, annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false } },
       async (args, extra) => {
-        const { decision, effect } = await hp.homeGuard.physical(tool, args as UnlockArgs, {
-          role: session.role,
-          bucket: session.role as Bucket,
-          session_id: session.sessionId(),
-          agent_last_message: agentLastMessage(extra),
-        });
+        let out;
+        try {
+          out = await hp.homeGuard.physical(tool, args as UnlockArgs, {
+            role: session.role,
+            bucket: session.role as Bucket,
+            session_id: session.sessionId(),
+            agent_last_message: agentLastMessage(extra),
+          });
+        } catch (err) {
+          // Fail closed: effects only run after an allow, so an error means nothing moved.
+          console.error(`[homepulse] ${tool} check failed:`, err);
+          return {
+            content: [{ type: "text" as const, text: "BLOCKED: the check could not be completed, so the door stayed locked." }],
+            structuredContent: { allow: false, verdict: "BLOCKED", reasons: ["the check could not be completed"], error: true },
+            isError: true,
+          };
+        }
+        const { decision, effect } = out;
         const structuredContent = {
           allow: decision.allow,
           verdict: decision.allow ? "ALLOWED" : "BLOCKED",

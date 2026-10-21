@@ -27,3 +27,5 @@ jobs:
         run: npm run build
       - name: Golden-path scenarios in DEMO_MODE (offline stand-in)
         run: npm run demo -- --all
+      - name: Load test (concurrency, keypad race, webhook flood, large log)
+        run: npm run stress:load -- --prefill 20000

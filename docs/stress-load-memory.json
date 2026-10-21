@@ -1,0 +1,54 @@
+{
+  "mcp": {
+    "totalCalls": 2000,
+    "seconds": 5.217470687,
+    "callErrors": 0,
+    "doorsOpened": 0,
+    "sessionsLeft": 0
+  },
+  "keypad": {
+    "attempts": 1000,
+    "allowed": 1,
+    "uses": 1
+  },
+  "webhooks": {
+    "sent": 2000,
+    "bad": 0,
+    "stored": 2000
+  },
+  "largeLog": {
+    "get_door_events": {
+      "p50": 2.0303100000000995,
+      "p95": 3.8380190000007133
+    },
+    "describe_visitor": {
+      "p50": 1.8060849999983475,
+      "p95": 3.956527999998798
+    },
+    "explain_decision": {
+      "p50": 1.3300400000007357,
+      "p95": 4.372778999999355
+    },
+    "unlock_front_door": {
+      "p50": 2.3293719999983296,
+      "p95": 3.019506000000547
+    },
+    "GET /api/state": {
+      "p50": 6.708039000001008,
+      "p95": 12.857700000000477
+    },
+    "GET /api/engram (as of, last 500)": {
+      "p50": 5.15809900000022,
+      "p95": 7.448115000001053
+    },
+    "GET /api/why/:decision": {
+      "p50": 0.7024459999993269,
+      "p95": 1.6043220000010479
+    }
+  },
+  "integrity": {
+    "chainOk": true,
+    "records": 106249,
+    "listenersLeft": 0
+  }
+}

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { HomePulse } from "../context.js";
 import type { EngramRecord } from "../engram/store.js";
-import { formatClock, zonedParts } from "../time.js";
+import { formatClock, zonedParts, zonedToUtcMs } from "../time.js";
 import { ok, type Register } from "./common.js";
 
 const doorName = (d: string) => (d === "parcel_box" ? "parcel box" : "door");
@@ -21,34 +21,30 @@ function joinReasons(raw: string[]): string {
 export function explain(hp: HomePulse, decisionId?: string, question?: string): { sentence: string; decision_id: string | null; based_on: number[] } {
   const tz = hp.config.tz;
   const now = hp.clock.now();
-  const known = hp.engram.asOf(now);
 
   if (question && /\bwho (came|visited|was here|has been)\b/i.test(question)) {
     const today = zonedParts(now, tz);
-    const opened = known.filter((r) => {
-      if (r.payload.type !== "door_unlocked") return false;
-      const p = zonedParts(Date.parse(r.t_event), tz);
-      return p.year === today.year && p.month === today.month && p.day === today.day;
-    });
+    const startOfDay = zonedToUtcMs(today.year, today.month, today.day, 0, 0, tz);
+    const opened = hp.engram.eventsBetween(startOfDay, now, "effect").filter((r) => r.payload.type === "door_unlocked");
     if (!opened.length) return { sentence: "No one has come in today.", decision_id: null, based_on: [] };
     const parts = opened.map((r) => `${r.payload.who ?? "a visitor let in after an approval"} at ${formatClock(Date.parse(r.t_event), tz)}`);
     return { sentence: `Today: ${parts.join("; ")}.`, decision_id: null, based_on: opened.map((r) => r.id) };
   }
 
   let dec: EngramRecord | undefined;
-  if (decisionId) dec = known.filter((r) => r.kind === "decision" && r.payload.decision_id === decisionId).at(-1);
-  else if (question && /\bopen\b/i.test(question)) dec = known.filter((r) => r.kind === "decision" && r.payload.allow === true).at(-1);
-  dec ??= known.filter((r) => r.kind === "decision").at(-1);
-  if (!dec) return { sentence: "There haven't been any door requests yet.", decision_id: null, based_on: [] };
+  if (decisionId) dec = hp.engram.findDecision(decisionId, now);
+  else if (question && /\bopen\b/i.test(question)) dec = hp.engram.latestDecision(now, true);
+  dec ??= decisionId ? undefined : hp.engram.latestDecision(now);
+  if (!dec) return { sentence: decisionId ? "I couldn't find that door request." : "There haven't been any door requests yet.", decision_id: null, based_on: [] };
 
   const d = dec.payload as Record<string, any>;
   const at = formatClock(Date.parse(dec.t_event), tz);
-  const asOf = hp.engram.asOf(Date.parse(dec.t_known));
+  const knownAt = Date.parse(dec.t_known);
   const based: number[] = [dec.id];
 
   if (d.allow && d.path === "pass") {
-    const issued = asOf.filter((r) => r.payload.type === "pass_issued" && r.payload.pass_id === d.pass_id).at(-1);
-    const opened = asOf.concat(hp.engram.asOf(now)).find((r) => r.payload.type === "door_unlocked" && r.payload.decision_id === d.decision_id);
+    const issued = d.pass_id ? hp.engram.passIssued(String(d.pass_id), knownAt) : undefined;
+    const opened = hp.engram.aboutDecision(String(d.decision_id), now).find((r) => r.payload.type === "door_unlocked");
     const name = (opened?.payload.who as string | undefined) ?? (issued?.payload.who as string | undefined) ?? "the visitor";
     if (issued) based.push(issued.id);
     const approved = issued ? `, which ${who(String(issued.payload.issued_by))} approved at ${formatClock(Date.parse(issued.t_known), tz)},` : "";
@@ -56,12 +52,25 @@ export function explain(hp: HomePulse, decisionId?: string, question?: string): 
     return { sentence: `The ${doorName(d.door)} opened at ${at} because ${name}'s pass${approved} matched ${where}.`, decision_id: d.decision_id, based_on: based };
   }
   if (d.allow && d.path === "owner") {
-    const appr = asOf.filter((r) => r.payload.type === "approval" && r.payload.decision_id === d.decision_id).at(-1);
+    const appr = hp.engram.aboutDecision(String(d.decision_id), knownAt).filter((r) => r.payload.type === "approval").at(-1);
     if (appr) based.push(appr.id);
     const by = appr ? `${who(appr.source)} approved it on the phone at ${formatClock(Date.parse(appr.t_known), tz)}` : "it was approved in the app";
     return { sentence: `The ${doorName(d.door)} opened at ${at} because ${by}.`, decision_id: d.decision_id, based_on: based };
   }
   return { sentence: `The ${doorName(d.door)} stayed locked at ${at} because ${joinReasons(d.reasons ?? [])}.`, decision_id: d.decision_id, based_on: based };
+}
+
+/** The records a decision relied on, as HomePulse knew them at the time (for the console's Why? panel). */
+export function why(hp: HomePulse, decisionId: string) {
+  const dec = hp.engram.findDecision(decisionId);
+  if (!dec) return null;
+  const knownAt = Date.parse(dec.t_known);
+  const relied = [
+    ...(dec.payload.pass_id ? [hp.engram.passIssued(String(dec.payload.pass_id), knownAt)] : []),
+    ...hp.engram.aboutDecision(decisionId, knownAt).filter((r) => r.payload.type === "approval"),
+    hp.engram.latestPersonEvent(knownAt - 120_000, knownAt),
+  ].filter((r): r is EngramRecord => !!r);
+  return { decision: dec, relied_on: relied.sort((a, b) => a.id - b.id), known_records: dec.id };
 }
 
 export const registerExplainDecision: Register = (server, hp) => {

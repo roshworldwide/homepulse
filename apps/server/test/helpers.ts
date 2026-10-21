@@ -19,15 +19,20 @@ export interface TestServer {
   clock: ControlledClock;
   token: (r: Role) => string;
   close: () => Promise<void>;
+  /** Live MCP sessions on the server. */
+  sessionCount: () => number;
+  /** Close every session server-side (as if the server forgot them). */
+  closeAllSessions: () => Promise<void>;
 }
 
-export async function startServer(opts: { at?: string; env?: Record<string, string>; provider?: ModelProvider } = {}): Promise<TestServer> {
+export async function startServer(opts: { at?: string; env?: Record<string, string>; provider?: ModelProvider; listenHost?: string } = {}): Promise<TestServer> {
   const env = {
     PORT: "0",
     HOST: "127.0.0.1",
     TZ: "America/Los_Angeles",
     DEMO_MODE: "false",
     APPROVAL_TIMEOUT_MS: "4000",
+    APPROVER_GRACE_MS: "500",
     MCP_ALLOWED_ORIGINS: "http://localhost:5173",
     ...opts.env,
   };
@@ -35,9 +40,9 @@ export async function startServer(opts: { at?: string; env?: Record<string, stri
   const clock = new ControlledClock(T(opts.at ?? "2026-10-22T14:14:00-07:00"), true);
   const hp = createHomePulse(config, { clock, dbFile: ":memory:", provider: opts.provider });
   let base = "";
-  const { app, close } = createApp(hp, extensions(hp, () => `${base}/mcp`));
+  const { app, close, sessions } = createApp(hp, extensions(hp, () => `${base}/mcp`));
   const server: Server = await new Promise((resolve) => {
-    const s = app.listen(0, "127.0.0.1", () => resolve(s));
+    const s = app.listen(0, opts.listenHost ?? "127.0.0.1", () => resolve(s));
   });
   const port = (server.address() as AddressInfo).port;
   base = `http://127.0.0.1:${port}`;
@@ -47,6 +52,10 @@ export async function startServer(opts: { at?: string; env?: Record<string, stri
     base,
     clock,
     token: (r) => config.tokens[r],
+    sessionCount: () => sessions.size,
+    closeAllSessions: async () => {
+      for (const s of [...sessions.values()]) await s.transport.close();
+    },
     close: async () => {
       await hp.agents?.close();
       await close();
@@ -66,8 +75,8 @@ export async function connect(ts: TestServer, role: Role, elicit?: Elicit): Prom
   );
   if (elicit) {
     // Wait for the approver's GET stream and registration.
-    for (let i = 0; i < 50 && !ts.hp.broker.connected().some((a) => a.role === role); i++) await sleep(20);
-    await sleep(100);
+    for (let i = 0; i < 100 && !ts.hp.broker.connected().some((a) => a.role === role); i++) await sleep(20);
+    await sleep(50);
   }
   return client;
 }

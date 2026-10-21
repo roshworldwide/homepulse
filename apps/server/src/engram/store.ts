@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
 import type { DatabaseSync, StatementSync } from "node:sqlite";
 import { quietSqliteWarning, transaction } from "../db.js";
-import { canonicalJson, chainHash, GENESIS_HASH, trustOf, verifyChain, type ChainCheck, type ChainedRecord, type Source, type Trust } from "mcp-streamable-guard";
+import { canonicalJson, chainHash, GENESIS_HASH, trustOf, type ChainCheck, type Source, type Trust } from "mcp-streamable-guard";
 import type { Bus } from "../bus.js";
 import type { Clock } from "../clock.js";
 
@@ -21,6 +21,11 @@ export interface EngramRecord {
   hash: string;
 }
 
+/** A Ring event that means a person is at the door: a bell press, or motion with sub_type human. */
+const PERSON_EVENT = `kind = 'input' AND source = 'ring' AND (json_extract(payload, '$.event.type') = 'button_press' OR (json_extract(payload, '$.event.type') = 'motion_detected' AND json_extract(payload, '$.event.sub_type') = 'human'))`;
+const RING_EVENT = `kind = 'input' AND source = 'ring' AND json_extract(payload, '$.type') = 'ring_event'`;
+const OUTSIDE_TEXT = `kind = 'input' AND trust = 'untrusted' AND json_type(payload, '$.outside_text') = 'array' AND json_array_length(payload, '$.outside_text') > 0`;
+
 export const SCHEMA = `
 CREATE TABLE IF NOT EXISTS records (
   id        INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -35,6 +40,16 @@ CREATE TABLE IF NOT EXISTS records (
 );
 CREATE INDEX IF NOT EXISTS records_known ON records (t_known);
 CREATE INDEX IF NOT EXISTS records_kind_event ON records (kind, t_event);
+-- Targeted indexes for the guard's hot queries, so a busy or long-lived log stays fast.
+CREATE INDEX IF NOT EXISTS records_rate ON records (json_extract(payload, '$.bucket'), t_event) WHERE kind = 'tool_call';
+CREATE INDEX IF NOT EXISTS records_person ON records (t_event) WHERE ${PERSON_EVENT};
+CREATE INDEX IF NOT EXISTS records_ring ON records (t_event) WHERE ${RING_EVENT};
+CREATE INDEX IF NOT EXISTS records_ring_id ON records (json_extract(payload, '$.event.event_id')) WHERE ${RING_EVENT};
+DROP INDEX IF EXISTS records_outside;
+CREATE INDEX IF NOT EXISTS records_outside_text ON records (t_event) WHERE ${OUTSIDE_TEXT};
+CREATE INDEX IF NOT EXISTS records_decision_id ON records (json_extract(payload, '$.decision_id'));
+CREATE INDEX IF NOT EXISTS records_pass_id ON records (json_extract(payload, '$.pass_id')) WHERE kind = 'effect';
+CREATE INDEX IF NOT EXISTS records_decisions ON records (id) WHERE kind = 'decision';
 -- No UPDATE or DELETE on records anywhere in the code; corrections are new records.
 `;
 
@@ -70,6 +85,21 @@ export class Engram {
   private insert: StatementSync;
   private last: StatementSync;
   private appendTx: (input: AppendInput) => EngramRecord;
+  private stmts = new Map<string, StatementSync>();
+
+  /**
+   * Prepared statements are cached: preparing on every call was a measurable cost under load.
+   * Hot queries name their partial index (INDEXED BY): without ANALYZE statistics SQLite
+   * otherwise preferred the generic (kind, t_event) index and scanned the whole time window.
+   */
+  private q(sql: string): StatementSync {
+    let st = this.stmts.get(sql);
+    if (!st) {
+      st = this.db.prepare(sql);
+      this.stmts.set(sql, st);
+    }
+    return st;
+  }
 
   constructor(
     readonly db: DatabaseSync,
@@ -107,22 +137,32 @@ export class Engram {
   }
 
   all(): EngramRecord[] {
-    return (this.db.prepare("SELECT * FROM records ORDER BY id").all() as unknown as Row[]).map(fromRow);
+    return (this.q("SELECT * FROM records ORDER BY id").all() as unknown as Row[]).map(fromRow);
+  }
+
+  count(): number {
+    return Number((this.q("SELECT COUNT(*) AS n FROM records").get() as { n: number }).n);
   }
 
   tail(n: number): EngramRecord[] {
-    return (this.db.prepare("SELECT * FROM (SELECT * FROM records ORDER BY id DESC LIMIT ?) ORDER BY id").all(n) as unknown as Row[]).map(fromRow);
+    return (this.q("SELECT * FROM (SELECT * FROM records ORDER BY id DESC LIMIT ?) ORDER BY id").all(n) as unknown as Row[]).map(fromRow);
   }
 
   get(id: number): EngramRecord | undefined {
-    const r = this.db.prepare("SELECT * FROM records WHERE id = ?").get(id) as unknown as Row | undefined;
+    const r = this.q("SELECT * FROM records WHERE id = ?").get(id) as unknown as Row | undefined;
     return r ? fromRow(r) : undefined;
   }
 
   /** Exactly what HomePulse knew at time T: every record with t_known <= T. */
   asOf(tMs: number): EngramRecord[] {
     const T = new Date(tMs).toISOString();
-    return (this.db.prepare("SELECT * FROM records WHERE t_known <= ? ORDER BY id").all(T) as unknown as Row[]).map(fromRow);
+    return (this.q("SELECT * FROM records WHERE t_known <= ? ORDER BY id").all(T) as unknown as Row[]).map(fromRow);
+  }
+
+  /** The most recent `limit` records known at time T (for the console's as-of view). */
+  asOfTail(tMs: number, limit: number): EngramRecord[] {
+    const T = new Date(tMs).toISOString();
+    return (this.q("SELECT * FROM (SELECT * FROM records WHERE t_known <= ? ORDER BY id DESC LIMIT ?) ORDER BY id").all(T, limit) as unknown as Row[]).map(fromRow);
   }
 
   /** Records whose t_event falls in [fromMs, toMs] and that were known by toMs. */
@@ -130,7 +170,7 @@ export class Engram {
     const a = new Date(fromMs).toISOString();
     const b = new Date(toMs).toISOString();
     let sql = "SELECT * FROM records WHERE t_event >= ? AND t_event <= ? AND t_known <= ?";
-    const params: unknown[] = [a, b, b];
+    const params: string[] = [a, b, b];
     if (kind) {
       sql += " AND kind = ?";
       params.push(kind);
@@ -140,18 +180,96 @@ export class Engram {
       params.push(source);
     }
     sql += " ORDER BY id";
-    return (this.db.prepare(sql).all(...(params as string[])) as unknown as Row[]).map(fromRow);
+    return (this.q(sql).all(...params) as unknown as Row[]).map(fromRow);
   }
 
-  findDecision(decisionId: string): EngramRecord | undefined {
-    const r = this.db
-      .prepare("SELECT * FROM records WHERE kind = 'decision' AND json_extract(payload, '$.decision_id') = ? ORDER BY id DESC LIMIT 1")
-      .get(decisionId) as unknown as Row | undefined;
+  /** Physical requests from one caller bucket in [fromMs, toMs], known by toMs, not counting record `excludeId`. */
+  countPhysicalCalls(bucket: string, fromMs: number, toMs: number, excludeId = -1): number {
+    const a = new Date(fromMs).toISOString();
+    const b = new Date(toMs).toISOString();
+    const r = this.q(
+      "SELECT COUNT(*) AS n FROM records INDEXED BY records_rate WHERE kind = 'tool_call' AND json_extract(payload, '$.bucket') = ? AND t_event >= ? AND t_event <= ? AND t_known <= ? AND json_extract(payload, '$.physical') = 1 AND id != ?",
+    ).get(bucket, a, b, b, excludeId) as { n: number };
+    return Number(r.n);
+  }
+
+  /** The latest Ring event meaning a person is at the door, in [fromMs, toMs] and known by toMs. */
+  latestPersonEvent(fromMs: number, toMs: number): EngramRecord | undefined {
+    const a = new Date(fromMs).toISOString();
+    const b = new Date(toMs).toISOString();
+    const r = this.q(`SELECT * FROM records INDEXED BY records_person WHERE ${PERSON_EVENT} AND t_event >= ? AND t_event <= ? AND t_known <= ? ORDER BY t_event DESC, id DESC LIMIT 1`).get(a, b, b) as unknown as Row | undefined;
     return r ? fromRow(r) : undefined;
   }
 
+  /** Ring events in [fromMs, toMs], newest `limit`, oldest first. */
+  ringEvents(fromMs: number, toMs: number, limit: number): EngramRecord[] {
+    const a = new Date(fromMs).toISOString();
+    const b = new Date(toMs).toISOString();
+    return (this.q(`SELECT * FROM (SELECT * FROM records INDEXED BY records_ring WHERE ${RING_EVENT} AND t_event >= ? AND t_event <= ? AND t_known <= ? ORDER BY t_event DESC, id DESC LIMIT ?) ORDER BY t_event, id`).all(a, b, b, limit) as unknown as Row[]).map(fromRow);
+  }
+
+  findRingEvent(eventId: string): EngramRecord | undefined {
+    const r = this.q(`SELECT * FROM records INDEXED BY records_ring_id WHERE ${RING_EVENT} AND json_extract(payload, '$.event.event_id') = ? ORDER BY id DESC LIMIT 1`).get(eventId) as unknown as Row | undefined;
+    return r ? fromRow(r) : undefined;
+  }
+
+  /** Untrusted outside text recorded in [fromMs, toMs] (newest `limit` records). Explanation only. */
+  outsideTexts(fromMs: number, toMs: number, limit = 200): string[] {
+    const a = new Date(fromMs).toISOString();
+    const b = new Date(toMs).toISOString();
+    const rows = this.q(`SELECT json_extract(payload, '$.outside_text') AS t FROM records INDEXED BY records_outside_text WHERE ${OUTSIDE_TEXT} AND t_event >= ? AND t_event <= ? AND t_known <= ? ORDER BY t_event DESC LIMIT ?`).all(a, b, b, limit) as Array<{ t: string }>;
+    const out: string[] = [];
+    for (const r of rows) {
+      try {
+        for (const s of JSON.parse(r.t) as unknown[]) if (typeof s === "string" && s.trim()) out.push(s);
+      } catch {
+        /* not an array of strings */
+      }
+    }
+    return out;
+  }
+
+  findDecision(decisionId: string, knownBy?: number): EngramRecord | undefined {
+    // ISO strings compare as text; years past 9999 get a "+" prefix and would sort first, so use a fixed ceiling.
+    const T = knownBy === undefined ? "9999-12-31T23:59:59.999Z" : new Date(knownBy).toISOString();
+    const r = this.q("SELECT * FROM records WHERE json_extract(payload, '$.decision_id') = ? AND kind = 'decision' AND t_known <= ? ORDER BY id DESC LIMIT 1").get(decisionId, T) as unknown as Row | undefined;
+    return r ? fromRow(r) : undefined;
+  }
+
+  /** Records about one decision (approvals, effects), known by T. */
+  aboutDecision(decisionId: string, knownBy: number): EngramRecord[] {
+    const T = new Date(knownBy).toISOString();
+    return (this.q("SELECT * FROM records WHERE json_extract(payload, '$.decision_id') = ? AND t_known <= ? ORDER BY id").all(decisionId, T) as unknown as Row[]).map(fromRow);
+  }
+
+  latestDecision(knownBy: number, allowedOnly = false): EngramRecord | undefined {
+    const T = new Date(knownBy).toISOString();
+    const sql = allowedOnly
+      ? "SELECT * FROM records WHERE kind = 'decision' AND json_extract(payload, '$.allow') = 1 AND t_known <= ? ORDER BY id DESC LIMIT 1"
+      : "SELECT * FROM records WHERE kind = 'decision' AND t_known <= ? ORDER BY id DESC LIMIT 1";
+    const r = this.q(sql).get(T) as unknown as Row | undefined;
+    return r ? fromRow(r) : undefined;
+  }
+
+  passIssued(passId: string, knownBy: number): EngramRecord | undefined {
+    const T = new Date(knownBy).toISOString();
+    const r = this.q("SELECT * FROM records WHERE kind = 'effect' AND json_extract(payload, '$.pass_id') = ? AND json_extract(payload, '$.type') = 'pass_issued' AND t_known <= ? ORDER BY id DESC LIMIT 1").get(passId, T) as unknown as Row | undefined;
+    return r ? fromRow(r) : undefined;
+  }
+
+  /** Walk the chain one row at a time (constant memory, any log size). */
   verify(): ChainCheck {
-    return verifyChain(this.all() as unknown as ChainedRecord[]);
+    let prev = GENESIS_HASH;
+    let count = 0;
+    for (const raw of this.q("SELECT * FROM records ORDER BY id").iterate() as Iterable<unknown>) {
+      const r = fromRow(raw as Row);
+      count++;
+      if (r.prev_hash !== prev) return { ok: false, count, brokenAt: r.id, index: count - 1, why: "prev_hash does not match the previous record's hash" };
+      const { prev_hash: _p, hash: _h, ...body } = r;
+      if (chainHash(r.prev_hash, body) !== r.hash) return { ok: false, count, brokenAt: r.id, index: count - 1, why: "record contents do not match its hash" };
+      prev = r.hash;
+    }
+    return { ok: true, count, head: prev };
   }
 }
 

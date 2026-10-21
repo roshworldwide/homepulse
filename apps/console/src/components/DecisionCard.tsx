@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { decide } from "mcp-streamable-guard/policy";
 import { GUARD_INPUT_LABELS, GUARD_KEYS, type GuardInputs, type GuardKey } from "mcp-streamable-guard/inputs";
 import { fmtTime, getJson, type EngramRecord, type State } from "../lib/api";
@@ -113,26 +113,19 @@ function PendingNote() {
 
 /** Replays Engram as of the decision, and lets anyone flip the 14 inputs to see the verdict change. */
 function WhyPanel({ rec, tz }: { rec: EngramRecord; tz: string }) {
-  const [known, setKnown] = useState<EngramRecord[] | null>(null);
+  const [relied, setRelied] = useState<EngramRecord[] | null>(null);
+  const [knownCount, setKnownCount] = useState<number | null>(null);
   const original = rec.payload.inputs as GuardInputs;
   const [inputs, setInputs] = useState<GuardInputs>(original);
   useEffect(() => {
     setInputs(original);
-    getJson<EngramRecord[]>(`/api/engram?as_of=${encodeURIComponent(rec.t_known)}`).then(setKnown).catch(() => setKnown([]));
+    getJson<{ relied_on: EngramRecord[]; known_records: number }>(`/api/why/${encodeURIComponent(rec.payload.decision_id)}`)
+      .then((w) => {
+        setRelied(w.relied_on);
+        setKnownCount(w.known_records);
+      })
+      .catch(() => setRelied([]));
   }, [rec.id]);
-
-  const relied = useMemo(() => {
-    if (!known) return [];
-    const t = Date.parse(rec.t_known);
-    return known.filter(
-      (r) =>
-        (r.payload.type === "pass_issued" && (!rec.payload.pass_id || r.payload.pass_id === rec.payload.pass_id)) ||
-        (r.payload.type === "approval" && r.payload.decision_id === rec.payload.decision_id) ||
-        (r.payload.type === "ring_event" && t - Date.parse(r.t_event) <= 120_000) ||
-        (r.payload.type === "night_mode_set") ||
-        (r.payload.type === "lockdown"),
-    );
-  }, [known, rec]);
 
   const result = decide(inputs);
   const changed = GUARD_KEYS.some((k) => inputs[k] !== original[k]);
@@ -141,17 +134,17 @@ function WhyPanel({ rec, tz }: { rec: EngramRecord; tz: string }) {
     <div className="mt-4 grid gap-4 md:grid-cols-2">
       <div className="rounded-lg bg-bg/60 border border-line p-3">
         <div className="label">What HomePulse knew at {fmtTime(rec.t_known, tz, true)}</div>
-        {!known && <p className="text-sm text-muted mt-2">Replaying the log…</p>}
-        {known && relied.length === 0 && <p className="text-sm text-muted mt-2">No pass, approval or recent doorbell event on record.</p>}
+        {!relied && <p className="text-sm text-muted mt-2">Replaying the log…</p>}
+        {relied && relied.length === 0 && <p className="text-sm text-muted mt-2">No pass, approval or recent doorbell event on record.</p>}
         <ul className="mt-2 space-y-1 text-sm">
-          {relied.map((r) => (
+          {(relied ?? []).map((r) => (
             <li key={r.id}>
               <span className="text-faint font-mono mr-2">#{r.id}</span>
               {describe(r, tz)}
             </li>
           ))}
         </ul>
-        <p className="text-xs text-faint mt-3">Rebuilt from Engram records with t_known ≤ the decision time ({known?.length ?? "…"} records).</p>
+        <p className="text-xs text-faint mt-3">Rebuilt from Engram records with t_known ≤ the decision time (up to record #{knownCount ?? "…"}).</p>
       </div>
       <div className="rounded-lg bg-bg/60 border border-line p-3">
         <div className="flex items-center justify-between">

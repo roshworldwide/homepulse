@@ -139,6 +139,7 @@ export class Devices {
   text(to: string, body: string): Sms {
     const s = { id: ++this.seq, at: this.clock.now(), to, body };
     this.sms.push(s);
+    if (this.sms.length > 20) this.sms.shift();
     this.publish();
     return s;
   }

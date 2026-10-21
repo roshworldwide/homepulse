@@ -32,6 +32,19 @@ export class Approvals {
     return true;
   }
 
+  delete(decisionId: string): void {
+    this.byDecision.delete(decisionId);
+  }
+
+  /** Drop approvals too old to ever count (twice the freshness window). */
+  sweep(nowMs: number): void {
+    for (const [id, a] of this.byDecision) if (nowMs - a.at > 2 * APPROVAL_FRESH_MS || a.at - nowMs > 2 * APPROVAL_FRESH_MS) this.byDecision.delete(id);
+  }
+
+  size(): number {
+    return this.byDecision.size;
+  }
+
   clear(): void {
     this.byDecision.clear();
   }

@@ -70,7 +70,7 @@ export function createHomePulse(config: Config, opts: CreateOptions = {}): HomeP
   const home = new HomeState(clock, config.tz, bus);
   const devices = new Devices(clock, bus);
   const keys = loadOrCreateKeys(config.dataDir);
-  const broker = new ApprovalBroker(clock, bus);
+  const broker = new ApprovalBroker(clock, bus, config.approverGraceMs);
   const ids = new Ids(config.demoMode);
   const newId = (prefix: string) => ids.next(prefix);
   const ringClient = config.ringAccessToken ? new RingClient(config.ringApiBase, () => config.ringAccessToken) : null;

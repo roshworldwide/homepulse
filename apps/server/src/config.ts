@@ -28,6 +28,14 @@ export interface Config {
   approvalTimeoutMs: number;
   /** How long a door stays unlocked before relocking. */
   unlockMs: number;
+  /** An MCP session with no open stream and no requests for this long is closed. */
+  sessionIdleMs: number;
+  /** At most this many MCP sessions at once. */
+  sessionMax: number;
+  /** Extra Host names to answer to when listening beyond loopback (e.g. a LAN name or public domain). */
+  allowedHosts: string[];
+  /** How long a phone whose live stream dropped still counts as reachable while it reconnects. */
+  approverGraceMs: number;
 }
 
 export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -101,5 +109,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, opts: { dataDir
     dataDir,
     approvalTimeoutMs: Number(env.APPROVAL_TIMEOUT_MS ?? 45_000),
     unlockMs: Number(env.UNLOCK_MS ?? 30_000),
+    sessionIdleMs: Number(env.SESSION_IDLE_MS ?? 30 * 60_000),
+    sessionMax: Number(env.SESSION_MAX ?? 200),
+    allowedHosts: (env.ALLOWED_HOSTS ?? "").split(",").map((x) => x.trim().toLowerCase()).filter(Boolean),
+    approverGraceMs: Number(env.APPROVER_GRACE_MS ?? 5000),
   };
 }

@@ -38,7 +38,8 @@ export function normalizeRingEvent(raw: unknown, fallbackNow: number): Omit<Door
     type,
     sub_type: sub === undefined || sub === null ? null : String(sub),
     device_id: device === null ? null : String(device),
-    occurred_at: new Date(Number.isNaN(occurredMs) ? fallbackNow : occurredMs).toISOString(),
+    // Anything that is not a sane instant (NaN, Infinity, beyond year 9999) falls back to "now".
+    occurred_at: new Date(Number.isFinite(occurredMs) && occurredMs > 0 && occurredMs < 253402300800000 ? occurredMs : fallbackNow).toISOString(),
     attributes,
   };
 }
@@ -64,21 +65,14 @@ export class RingService {
     });
   }
 
-  events(sinceMinutes: number): DoorEvent[] {
+  /** Door events in the last `sinceMinutes`, newest `limit` (oldest first). */
+  events(sinceMinutes: number, limit = 100): DoorEvent[] {
     const now = this.clock.now();
-    return this.engram
-      .eventsBetween(now - sinceMinutes * 60_000, now, "input", "ring")
-      .filter((r) => r.payload.type === "ring_event")
-      .map((r) => r.payload.event as DoorEvent);
+    return this.engram.ringEvents(now - sinceMinutes * 60_000, now, limit).map((r) => r.payload.event as DoorEvent);
   }
 
   find(eventId: string): DoorEvent | undefined {
-    return this.engram
-      .all()
-      .filter((r) => r.kind === "input" && r.source === "ring" && r.payload.type === "ring_event")
-      .map((r) => r.payload.event as DoorEvent)
-      .reverse()
-      .find((e) => e.event_id === eventId);
+    return this.engram.findRingEvent(eventId)?.payload.event as DoorEvent | undefined;
   }
 
   /** The snapshot for an event: bundled file for injected events, the Ring media API for real ones. */

@@ -44,7 +44,11 @@ export function consoleRoutes(hp: HomePulse): Extension {
         const writtenAt = typeof req.body?.written_at === "string" ? Date.parse(req.body.written_at) : NaN;
         const r = await hp.compiler.propose(text, "caregiver", { t_event: Number.isNaN(writtenAt) ? undefined : writtenAt });
         res.json(r);
-        if (r.status === "draft") void confirmDraft(hp, r.draft_id, "from the caregiver's note (stands in for a Bee recording)", ["caregiver"]);
+        if (r.status === "draft") {
+          confirmDraft(hp, r.draft_id, "from the caregiver's note (stands in for a Bee recording)", ["caregiver"]).catch((err) =>
+            hp.engram.append({ kind: "alert", source: "system", payload: { type: "rule_confirmation_error", draft_id: r.draft_id, error: String(err instanceof Error ? err.message : err).slice(0, 300) } }),
+          );
+        }
       });
     },
   };

@@ -56,20 +56,32 @@ export class McpToolExecutor implements ToolExecutor {
     return client;
   }
 
+  /** Run fn on a connected client; if the session is gone (server restarted, session expired), reconnect once and retry. */
+  private async withClient<T>(fn: (c: Client) => Promise<T>): Promise<T> {
+    try {
+      return await fn(await this.connect());
+    } catch (err) {
+      if (!isSessionGone(err)) throw err;
+      await this.close();
+      return fn(await this.connect());
+    }
+  }
+
   async list(): Promise<ToolDef[]> {
     if (this.tools) return this.tools;
-    const { tools } = await (await this.connect()).listTools();
+    const { tools } = await this.withClient((c) => c.listTools());
     this.tools = tools.map((t) => ({ name: t.name, description: t.description ?? "", inputSchema: t.inputSchema as Record<string, unknown> }));
     return this.tools;
   }
 
   async call(name: string, args: Record<string, unknown>, meta: { lastAssistantText?: string }): Promise<ToolCallResult> {
-    const client = await this.connect();
-    const r = await client.callTool(
-      { name, arguments: args, _meta: meta.lastAssistantText ? { "homepulse/agent_last_message": meta.lastAssistantText } : undefined },
-      undefined,
-      // Physical calls may wait for a phone tap.
-      { timeout: 120_000 },
+    const r = await this.withClient((client) =>
+      client.callTool(
+        { name, arguments: args, _meta: meta.lastAssistantText ? { "homepulse/agent_last_message": meta.lastAssistantText } : undefined },
+        undefined,
+        // Physical calls may wait for a phone tap.
+        { timeout: 120_000 },
+      ),
     );
     const text = (r.content as Array<{ type: string; text?: string }> | undefined)?.map((c) => c.text ?? "").join(" ") ?? "";
     const json = (r.structuredContent as Record<string, unknown> | undefined) ?? { text };
@@ -81,6 +93,12 @@ export class McpToolExecutor implements ToolExecutor {
     this.client = null;
     this.tools = null;
   }
+}
+
+/** The server no longer knows our session (404), or the connection was closed under us. */
+export function isSessionGone(err: unknown): boolean {
+  const msg = String(err instanceof Error ? err.message : err);
+  return /Session not found|\b404\b|Not connected|Connection closed|-32001/i.test(msg);
 }
 
 const textOf = (m: Message) => (m.content ?? []).map((c) => ("text" in c && c.text ? c.text : "")).join(" ").trim();

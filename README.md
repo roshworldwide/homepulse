@@ -116,6 +116,18 @@ Only measured numbers appear here.
 | `decide()` alone | 0.001 ms | 0.003 ms |
 | Full check (Ed25519 verify, HMAC, SQLite reads, decide) | 0.45 ms | 0.64 ms |
 
+## Stress testing
+
+`npm run stress` runs the stress suites with extended settings and the load test. A shorter version of the same suites runs in `npm test` on every push. [docs/stress-report.md](docs/stress-report.md) has the full report: what was run, the 24 defects it found (all fixed, each with a regression test), and before/after numbers.
+
+- **Model-based test:** 3,000 random operation sequences (about 8,700 door requests) went through the real guard path, checked against an independently written oracle, with 0 disagreements.
+- **Fuzzing:** every HTTP surface was fuzzed with no 5xx, no stack trace and no door opened.
+- **Races:** 24 simultaneous uses of one pass opened the door exactly once.
+- **Crashes:** `kill -9` in the middle of a webhook flood left the chain intact, and every webhook acknowledged with `200` was stored.
+- **Load:** 383 MCP calls/s with 50 sessions; a 1,000-request keypad race opened the door once; the guard check takes 2.3 ms on a 106,249-record log.
+
+**Running beyond localhost:** with `HOST=0.0.0.0`, the console, live view, log and agent routes need a homeowner or caregiver token from other machines (`?token=` works for the live view). Add any public host name, such as the one Ring delivers webhooks to, to `ALLOWED_HOSTS`. Sessions expire after `SESSION_IDLE_MS` of inactivity, but never while a request or stream is open. Each role may hold `SESSION_MAX` sessions.
+
 ## Golden-path scenarios
 
 | # | Scenario | HomePulse | Baseline: no HomePulse |
@@ -130,7 +142,7 @@ Only measured numbers appear here.
 ## Ring
 
 - Real Partner API calls through the Developer Playground: devices, history, configurations (an end-to-end encrypted device shows "Video unavailable") and snapshot download.
-- The webhook receiver checks `X-Signature` (`sha256=` + hex HMAC-SHA256 over the raw body bytes), replies `200` at once, processes asynchronously, and is idempotent on `meta.request_id`. Unknown motion `sub_type` values are kept. Real and injected events use the same code path. The injector's payload follows Ring's v1.1 shape as far as we could read the docs; check field names against the "Webhook v1.1 Payload Structure" section before relying on real webhooks.
+- The webhook receiver checks `X-Signature` (`sha256=` + hex HMAC-SHA256 over the raw body bytes), stores the event and then replies `200` (one small write, well inside Ring's 5-second limit; a `200` means the event is on disk), answers `503` if the database cannot take the write so Ring resends, and is idempotent on `meta.request_id`. Unknown motion `sub_type` values are kept. Real and injected events use the same code path. The injector's payload follows Ring's v1.1 shape as far as we could read the docs; check field names against the "Webhook v1.1 Payload Structure" section before relying on real webhooks.
 - The vision prompt tells the model to ignore the watermark Ring puts on all Partner API media.
 - Ring's own [Computer Vision Guidelines](https://developer.amazon.com/docs/ring/computer-vision-guidelines.html) say: "Never treat VLM output as ground truth" and "Every VLM response needs validation before it reaches the user." HomePulse goes one step further: the description goes to the agent as untrusted data and never into the guard.
 

@@ -36,7 +36,8 @@ export async function confirmDraft(hp: HomePulse, draftId: string, via: string, 
   const draft = hp.compiler.getDraft(draftId);
   if (!draft) return { status: "not_found" as const, why: "No such draft. Drafts expire after 15 minutes." };
   const sentence = draft.read_back.replace(/ Confirm in the app\.$/, "");
-  const ask = await hp.broker.ask({
+  const ask = await hp.broker
+    .ask({
     ref: draftId,
     kind: "rule",
     message: `Confirm this rule (${via}): ${sentence}`,
@@ -45,7 +46,8 @@ export async function confirmDraft(hp: HomePulse, draftId: string, via: string, 
     description: "Confirm signs a one-time pass and shows you the code once.",
     timeoutMs: hp.config.approvalTimeoutMs,
     roles,
-  });
+  })
+    .catch((err): { answer: null; why: string; role?: undefined; session_id?: undefined } => ({ answer: null, why: `asking the phone failed (${err instanceof Error ? err.message : String(err)})` }));
   if (ask.answer === null) return { status: "not_confirmed" as const, why: ask.why ?? "no answer" };
   hp.engram.append({ kind: "input", source: ask.role!, payload: { type: "rule_confirmation", draft_id: draftId, confirmed: ask.answer } });
   if (!ask.answer) return { status: "declined" as const, why: `The ${ask.role} declined the rule.` };
@@ -68,11 +70,20 @@ export async function confirmDraft(hp: HomePulse, draftId: string, via: string, 
       timeoutMs: 10 * 60_000,
     })
     .then((r) => {
+      if (r.answer === null && r.why === "no approver connected") {
+        // The phone that confirmed went away before the code could be shown, so nobody has the code:
+        // revoke the orphan pass and say so, instead of leaving a pass no one can use.
+        hp.passes.revoke(issued.pass.pass_id, "code could not be shown", hp.clock.now());
+        hp.engram.append({ kind: "effect", source: "system", payload: { type: "pass_revoked", pass_id: issued.pass.pass_id, who: issued.pass.who, why: "the code could not be shown on the phone" } });
+        hp.devices.alert(ask.role ?? "homeowner", "Pass not created", `The code for ${issued.pass.who} could not be shown, so that pass was cancelled. Please ask again.`);
+        return;
+      }
       if (r.answer) {
         hp.devices.text(issued.pass.who, `HomePulse: your one-time code for the ${doorLabel(issued.pass.door)} (${window}) is ${issued.code}.`);
         hp.engram.append({ kind: "effect", source: r.role ?? "homeowner", payload: { type: "code_sent", pass_id: issued.pass.pass_id, to: issued.pass.who, simulated: true } });
       }
-    });
+    })
+    .catch((err) => console.error("[homepulse] showing the code failed:", err));
 
   return {
     status: "confirmed" as const,

@@ -9,6 +9,7 @@ import { DraftSchema, type ModelInfo, type ModelProvider, type RuleDraftRaw } fr
 export const MAX_WINDOW_MS = 12 * 60 * 60_000;
 const START_GRACE_MS = 2 * 60_000;
 const DRAFT_TTL_MS = 15 * 60_000;
+const MAX_DRAFTS = 200;
 const SAFE_DEPENDENCIES = new Set(["pass_code", "owner_approval"]);
 
 /** Conditions a visitor can fake. A rule that rests on any of these is refused. */
@@ -82,11 +83,18 @@ export class RuleCompiler {
 
   async propose(utterance: string, submittedBy: Source, opts: { t_event?: number } = {}): Promise<ProposeResult> {
     const now = this.clock.now();
-    const p = zonedParts(now, this.tz);
     const weekday = new Intl.DateTimeFormat("en-US", { timeZone: this.tz, weekday: "long" }).format(new Date(now));
     const clean = utterance.replace(/[\u0000-\u001f]/g, " ").slice(0, 500);
-    const { output, info, latency_ms } = await this.provider().draftRule(clean, { now_iso: isoInTz(now, this.tz), tz: this.tz, weekday });
-    void p;
+    let drafted: Awaited<ReturnType<ModelProvider["draftRule"]>>;
+    try {
+      drafted = await this.provider().draftRule(clean, { now_iso: isoInTz(now, this.tz), tz: this.tz, weekday });
+    } catch (err) {
+      // A model error or a reply that fails the schema never becomes a rule.
+      const info = this.provider().info();
+      this.engram.append({ kind: "alert", source: "system", t_event: opts.t_event, payload: { type: "rule_draft_error", utterance: clean, model: info, error: String(err instanceof Error ? err.message : err).slice(0, 300) } });
+      return { status: "invalid", why: "I couldn't turn that into a rule. Try saying who is coming and when.", model: info };
+    }
+    const { output, info, latency_ms } = drafted;
 
     this.engram.append({
       kind: "input",
@@ -157,6 +165,9 @@ export class RuleCompiler {
     const now = this.clock.now();
     const draft: Draft = { ...d, draft_id: this.newId("draft_"), read_back: this.readBack(d, now), created_at: now };
     this.drafts.set(draft.draft_id, draft);
+    // Bounded: drop expired drafts, then the oldest beyond the cap.
+    for (const [id, x] of this.drafts) if (now - x.created_at > DRAFT_TTL_MS || x.created_at - now > DRAFT_TTL_MS) this.drafts.delete(id);
+    while (this.drafts.size > MAX_DRAFTS) this.drafts.delete(this.drafts.keys().next().value as string);
     return draft;
   }
 
