@@ -138,7 +138,7 @@ export function BreakItPage() {
       <a href="#main" className="skip-link">
         Skip to content
       </a>
-      <header className="sticky top-0 z-20 px-3 pt-3">
+      <header className="edge-fade sticky top-0 z-20 px-3 pt-3">
         <div className="glass glass-fog mx-auto flex h-14 max-w-[1120px] items-center gap-3 rounded-capsule pl-2.5 pr-3">
           <a href="/break-it" className="flex min-w-0 items-center gap-2.5" aria-label="HomePulse: try to break in">
             <Mark size={34} />

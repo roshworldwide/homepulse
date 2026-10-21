@@ -8,6 +8,12 @@ It's for the 63 million Americans who are family caregivers ([AARP, 2025](https:
 
 ![Architecture](docs/architecture.svg)
 
+| Console, light: a sign at the camera is blocked | Console, dark: Why? with one input flipped |
+| --- | --- |
+| ![Console in light appearance](docs/screens/console-light.webp) | ![Console in dark appearance with the what-if panel open](docs/screens/console-dark.webp) |
+| **Alexa+: an approval waits on the homeowner's phone** | **Break in, on a phone** |
+| ![Alexa+ page with a pending approval](docs/screens/alexa-dark.webp) | <img src="docs/screens/break-in-phone.webp" alt="Break-in page on a phone, showing the result" width="300"> |
+
 ## What's real and what's simulated
 
 No hardware is needed. Every simulated part says so in the app, this README and the video.
@@ -185,7 +191,7 @@ apps/server      MCP server, tools, guard wiring, Engram, simulated devices, Rin
 apps/console     Vite + React + Tailwind on the Rosh 27 design system: /console, /alexa and /break-it
 harness          Holdout: attacks/*.yaml, guard-level and agent-level runners
 assets           Simulated doorbell snapshots
-docs             architecture, latency, stress report, product feedback, friction log
+docs             architecture, screens, latency, stress report, product feedback, friction log
 deploy/aws       ECS Express Mode deployment for the break-in page, IAM policies, budget alarm
 Dockerfile       the public break-in image
 ```

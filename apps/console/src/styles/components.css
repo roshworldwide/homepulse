@@ -1096,6 +1096,7 @@
     z-index: 20;
     padding: 8px 8px 0;
   }
+  .edge-fade::before,
   .toolbar-wrap::before {
     content: "";
     position: absolute;
