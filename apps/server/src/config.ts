@@ -62,6 +62,20 @@ export function loadDotEnv(file = path.join(REPO_ROOT, ".env")): void {
 
 const hex64 = () => randomBytes(32).toString("hex");
 
+/** An http(s) URL, or null (an invalid PUBLIC_URL is ignored with a warning rather than failing every request). */
+function validUrl(v: string | undefined): string | null {
+  const t = v?.trim();
+  if (!t) return null;
+  try {
+    const u = new URL(t);
+    if (u.protocol === "http:" || u.protocol === "https:") return u.toString();
+  } catch {
+    /* fall through */
+  }
+  console.warn(`[homepulse] ignoring PUBLIC_URL ${JSON.stringify(t)}: not an http(s) URL`);
+  return null;
+}
+
 function persisted(dataDir: string | null, file: string, keys: string[], given: Record<string, string | undefined>): Record<string, string> {
   const out: Record<string, string> = {};
   let stored: Record<string, string> = {};
@@ -123,7 +137,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, opts: { dataDir
     approverGraceMs: Number(env.APPROVER_GRACE_MS ?? 5000),
     trustProxy: env.TRUST_PROXY?.trim() || null,
     homePage: env.HOME_PAGE === "/break-it" ? "/break-it" : "/console",
-    publicUrl: env.PUBLIC_URL?.trim() || null,
+    publicUrl: validUrl(env.PUBLIC_URL),
     breakIt: {
       enabled: (env.BREAK_IT ?? "true") === "true",
       perAddressPerHour: Number(env.BREAK_IT_PER_ADDRESS_PER_HOUR ?? 10),

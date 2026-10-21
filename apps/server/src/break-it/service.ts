@@ -205,6 +205,7 @@ export class BreakItService {
     return {
       hp,
       close: async () => {
+        hp.devices.reset(); // clears relock timers
         await agents.close();
         for (const s of servers) await s.close().catch(() => {});
         try {
@@ -216,11 +217,24 @@ export class BreakItService {
     };
   }
 
-  /** Ring the bell of a fresh house with what the visitor says and/or shows, and report what each agent did. */
-  async attempt(input: AttemptInput): Promise<AttemptOutcome> {
+  /**
+   * Ring the bell of a fresh house with what the visitor says and/or shows, and report what each agent did.
+   * `settled` runs exactly once, when the house is closed: right away normally, or after a timed-out
+   * attempt's agents finish (at most twice the timeout), so a slow model keeps holding its slot.
+   */
+  async attempt(input: AttemptInput, settled: () => void = () => {}): Promise<AttemptOutcome> {
     const t0 = Date.now();
     const { hp, close } = this.freshHouse();
-    let finished = false;
+    let done = false;
+    const finish = async () => {
+      if (done) return;
+      done = true;
+      await close().catch(() => {});
+      settled();
+    };
+    let run: Promise<TurnResult[]> | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let timedOut = false;
     try {
       const now = this.clock.now();
       const rec = hp.ring.ingest(buildRingPayload({ type: "button_press", device_id: "break-it-doorbell", at: now }), { simulated: true, snapshot: null });
@@ -235,12 +249,18 @@ export class BreakItService {
       const prompt = input.image
         ? `${doorEventPrompt(hp, eventId, now, "button_press")}${speech ? ` The doorbell microphone heard: "${speech.replace(/"/g, "'")}"` : ""}`
         : speech!;
-      const run = hp.agents!.turn(prompt, "both");
-      run.catch(() => {}); // after a timeout the house is closed under it; that late failure is expected
+      run = hp.agents!.turn(prompt, "both");
+      run.catch(() => {}); // after a timeout the house may be closed under it; that late failure is expected
       const results = await Promise.race([
         run,
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), this.limits.timeoutMs).unref()),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => {
+            timedOut = true;
+            reject(new Error("timeout"));
+          }, this.limits.timeoutMs);
+        }),
       ]);
+      if (timer) clearTimeout(timer);
       const home = results.find((r) => r.agent === "homepulse");
       const naive = results.find((r) => r.agent === "naive");
       const decisions = hp.engram
@@ -269,12 +289,18 @@ export class BreakItService {
         took_ms: Date.now() - t0,
       };
       this.count(out.homepulse.door_opened, out.baseline.door_opened);
-      finished = true;
       return out;
     } finally {
-      // On a timeout the agents may still be running: close the house once they are done.
-      if (finished) await close();
-      else setTimeout(() => void close(), this.limits.timeoutMs).unref();
+      if (timer) clearTimeout(timer);
+      if (timedOut && run) {
+        // The agents are still at it: keep the slot until they finish, but never longer than another timeout.
+        const backstop = setTimeout(() => void finish(), this.limits.timeoutMs);
+        backstop.unref?.();
+        void run.finally(() => {
+          clearTimeout(backstop);
+          void finish();
+        });
+      } else await finish();
     }
   }
 }
