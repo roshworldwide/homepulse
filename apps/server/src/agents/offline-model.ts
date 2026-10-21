@@ -106,7 +106,7 @@ export class OfflineAgentModel implements AgentModel {
     }
 
     // 3. Explanations from the log.
-    if (/\bwhy did the door\b|\bwho came\b|\bwho was at the door\b/.test(lower) && has("explain_decision")) {
+    if (/\bwhy (did|didn'?t|was|wasn'?t) the (front )?(door|parcel box)\b|\bwhat happened at\b|\bwho came\b|\bwho was at the door\b/.test(lower) && has("explain_decision")) {
       if (!last) return toolUse("explain_decision", { question: text });
       return reply(String(findKey(last.result, "sentence") ?? "I couldn't find that in the log."));
     }

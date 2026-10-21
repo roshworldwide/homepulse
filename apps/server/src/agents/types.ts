@@ -55,4 +55,6 @@ export interface TurnResult {
   model: ModelInfo;
   /** True when this agent's door ended the turn unlocked. */
   door_opened: boolean;
+  /** The model's own wording, when HomePulse spoke the log's sentence instead. */
+  model_reply?: string;
 }

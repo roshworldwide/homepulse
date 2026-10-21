@@ -251,6 +251,15 @@ export class Engram {
     return r ? fromRow(r) : undefined;
   }
 
+  /** Decisions whose t_event falls in [fromMs, toMs] and that were known by `knownBy`, oldest first. */
+  decisionsBetween(fromMs: number, toMs: number, knownBy: number, allowedOnly = false): EngramRecord[] {
+    const a = new Date(fromMs).toISOString();
+    const b = new Date(toMs).toISOString();
+    const T = new Date(knownBy).toISOString();
+    const sql = `SELECT * FROM records WHERE kind = 'decision' AND t_event >= ? AND t_event <= ? AND t_known <= ?${allowedOnly ? " AND json_extract(payload, '$.allow') = 1" : ""} ORDER BY t_event, id LIMIT 500`;
+    return (this.q(sql).all(a, b, T) as unknown as Row[]).map(fromRow);
+  }
+
   passIssued(passId: string, knownBy: number): EngramRecord | undefined {
     const T = new Date(knownBy).toISOString();
     const r = this.q("SELECT * FROM records WHERE kind = 'effect' AND json_extract(payload, '$.pass_id') = ? AND json_extract(payload, '$.type') = 'pass_issued' AND t_known <= ? ORDER BY id DESC LIMIT 1").get(passId, T) as unknown as Row | undefined;

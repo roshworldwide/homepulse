@@ -125,7 +125,7 @@ export class AgentService {
     const door = rt.name === "homepulse" ? this.hp.devices.frontDoor : this.hp.devices.baselineDoor;
     const before = door.history.length;
     const history = rt.turns.flat();
-    const { reply, steps, messages } = await runAgentLoop({
+    const { reply: modelReply, steps, messages } = await runAgentLoop({
       model: rt.model,
       system: rt.system,
       executor: rt.executor,
@@ -137,9 +137,16 @@ export class AgentService {
     });
     rt.turns.push(messages.slice(history.length));
     if (rt.turns.length > MAX_TURNS_KEPT) rt.turns.shift();
+    let reply = modelReply;
+    if (rt.name === "homepulse") {
+      // Explanations are spoken exactly as the log's template wrote them, so even a
+      // real model cannot reword (or invent) why the door opened.
+      const sentences = [...new Set(steps.filter((s) => s.kind === "tool_result" && s.name === "explain_decision").map((s) => (s.result as { sentence?: unknown } | undefined)?.sentence).filter((x): x is string => typeof x === "string" && x.length > 0))];
+      if (sentences.length) reply = sentences.join(" ");
+    }
     const door_opened = door.history.slice(before).some((h) => h.state === "unlocked");
     if (rt.name === "homepulse" && reply) this.hp.devices.say(reply, "alexa");
     this.hp.bus.publish({ type: "agent", agent: { name: rt.name, reply, door_opened } });
-    return { agent: rt.name, reply, steps, model: rt.model.info(), door_opened };
+    return { agent: rt.name, reply, steps, model: rt.model.info(), door_opened, ...(reply !== modelReply ? { model_reply: modelReply } : {}) };
   }
 }
