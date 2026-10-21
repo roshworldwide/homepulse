@@ -440,4 +440,15 @@ describe("review findings", () => {
     expect(allowed("evil.example")).toBe(false);
     ts = await startServer();
   });
+
+  test("an entry starting with a dot allows that domain's subdomains, and nothing else", async () => {
+    const { hostAllowList } = await import("../../src/http.js");
+    const allowed = hostAllowList([".ecs.us-east-1.on.aws", ".", ".com"]);
+    expect(allowed("homepulse-3f9a.ecs.us-east-1.on.aws")).toBe(true);
+    expect(allowed("ecs.us-east-1.on.aws")).toBe(false);
+    expect(allowed("x.ecs.us-east-1.on.aws.evil.example")).toBe(false);
+    expect(allowed("evilecs.us-east-1.on.aws")).toBe(false);
+    expect(allowed("evil.com")).toBe(false); // single-label suffixes are ignored
+    ts = await startServer();
+  });
 });

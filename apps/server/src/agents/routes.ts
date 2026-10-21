@@ -23,7 +23,7 @@ export function agentRoutes(hp: HomePulse, agents: AgentService): Extension {
 
       /** The simulated Alexa+ page: a spoken (or typed) request goes to both agents. */
       app.post("/agent/turn", json, async (req, res) => {
-        if (!allow(req.socket.remoteAddress ?? "?")) return res.status(429).json({ error: "Too many requests" });
+        if (!allow(req.ip ?? req.socket.remoteAddress ?? "?")) return res.status(429).json({ error: "Too many requests" });
         const text = String(req.body?.text ?? "").slice(0, 600).trim();
         if (!text) return res.status(400).json({ error: "Say something first." });
         const which = req.body?.agents === "homepulse" || req.body?.agents === "naive" ? req.body.agents : "both";

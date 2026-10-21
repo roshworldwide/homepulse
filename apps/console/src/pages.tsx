@@ -35,6 +35,9 @@ function Header({ state, connected, page }: { state: State | null; connected: bo
           <a className={`px-2 py-1 rounded-md ${page === "alexa" ? "bg-panel2" : "text-muted"}`} href="/alexa">
             Alexa+
           </a>
+          <a className="px-2 py-1 rounded-md text-muted" href="/break-it">
+            Break in
+          </a>
         </nav>
       </div>
       <div className="flex flex-wrap items-center gap-2 text-sm">

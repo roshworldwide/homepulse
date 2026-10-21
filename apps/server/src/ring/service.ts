@@ -45,6 +45,9 @@ export function normalizeRingEvent(raw: unknown, fallbackNow: number): Omit<Door
 }
 
 export class RingService {
+  /** Snapshots that arrived with an event instead of from a file or the Ring API (the break-in page's uploads). */
+  private attached = new Map<string, ImageInput>();
+
   constructor(
     private engram: Engram,
     private clock: Clock,
@@ -76,7 +79,15 @@ export class RingService {
   }
 
   /** The snapshot for an event: bundled file for injected events, the Ring media API for real ones. */
+  /** Keep an uploaded snapshot for one event, in memory only. */
+  attachImage(eventId: string, image: ImageInput): void {
+    this.attached.set(eventId, image);
+    if (this.attached.size > 20) this.attached.delete(this.attached.keys().next().value as string);
+  }
+
   async snapshot(ev: DoorEvent): Promise<ImageInput | { unavailable: string }> {
+    const up = this.attached.get(ev.event_id);
+    if (up) return up;
     if (ev.snapshot) {
       // Bundled assets, plus any extra folders (the Holdout harness renders sign snapshots into its own folder).
       const dirs = [ASSETS_DIR, ...(process.env.HOMEPULSE_SNAPSHOT_DIRS ?? "").split(",").filter(Boolean)];

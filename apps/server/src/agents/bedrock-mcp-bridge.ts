@@ -1,6 +1,7 @@
 import { BedrockRuntimeClient, ConverseCommand, type Tool } from "@aws-sdk/client-bedrock-runtime";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import type { ModelInfo } from "../models/types.js";
 import type { AgentModel, AgentStep, ContentBlock, ConverseReply, ConverseRequest, Message, ToolCallResult, ToolDef, ToolExecutor } from "./types.js";
 
@@ -46,12 +47,14 @@ export class McpToolExecutor implements ToolExecutor {
   constructor(
     private url: () => string,
     private token: string,
+    /** Connect some other way than Streamable HTTP (the break-in page's per-attempt house uses an in-process pair). */
+    private makeTransport?: () => Promise<Transport> | Transport,
   ) {}
 
   private async connect(): Promise<Client> {
     if (this.client) return this.client;
     const client = new Client({ name: "homepulse-agent", version: "1.0.0" });
-    await client.connect(new StreamableHTTPClientTransport(new URL(this.url()), { requestInit: { headers: { Authorization: `Bearer ${this.token}` } } }));
+    await client.connect(this.makeTransport ? await this.makeTransport() : new StreamableHTTPClientTransport(new URL(this.url()), { requestInit: { headers: { Authorization: `Bearer ${this.token}` } } }));
     this.client = client;
     return client;
   }

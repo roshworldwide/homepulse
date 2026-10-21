@@ -1,0 +1,11 @@
+.git
+.github
+.env
+.guard
+data
+node_modules
+**/node_modules
+apps/console/dist
+packages/guard/dist
+docs/stress-load-*.json
+*.log

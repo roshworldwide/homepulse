@@ -1,3 +1,4 @@
+import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import type { HomePulse } from "../context.js";
 import { FixtureStore } from "../models/fixtures.js";
 import { redactCodes } from "../guard/home-guard.js";
@@ -85,6 +86,7 @@ export class AgentService {
     private hp: HomePulse,
     mcpUrl: () => string,
     models?: { homepulse?: AgentModel; naive?: AgentModel },
+    opts: { makeTransport?: () => Promise<Transport> | Transport } = {},
   ) {
     const cfg = hp.config;
     const store = new FixtureStore();
@@ -95,7 +97,7 @@ export class AgentService {
       if (cfg.demoMode) return new AgentFixtureModel(store, () => hp.scenario, agent, live, offline, record);
       return live ?? offline;
     };
-    this.mcp = new McpToolExecutor(mcpUrl, cfg.tokens.agent);
+    this.mcp = new McpToolExecutor(mcpUrl, cfg.tokens.agent, opts.makeTransport);
     this.homepulse = { name: "homepulse", model: models?.homepulse ?? make("homepulse"), executor: this.mcp, system: HOMEPULSE_SYSTEM(cfg.tz), turns: [] };
     const naiveExec = new NaiveToolExecutor(hp, () => this.mcp.list(), (e) => hp.bus.publish({ type: "agent", agent: { name: "naive", ...e } }));
     this.naive = { name: "naive", model: models?.naive ?? make("naive"), executor: naiveExec, system: NAIVE_SYSTEM(cfg.tz), turns: [] };

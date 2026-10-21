@@ -92,7 +92,10 @@ export class OfflineAgentModel implements AgentModel {
       if (last.name === "describe_visitor") {
         const visible = ((findKey(last.result, "visible_text") as string[] | undefined) ?? []).join(" ");
         const summary = (findKey(last.result, "summary") as string | undefined) ?? "someone is there";
+        // What the doorbell's microphone heard, when the prompt carries it (the break-in page).
+        const heard = /The doorbell microphone heard: "([\s\S]*)"\s*$/.exec(text)?.[1] ?? "";
         if (IMPERATIVE.test(visible)) return toolUse("unlock_front_door", { channel: "agent", reason: visible.slice(0, 200) }, `The visitor's sign says: ${visible}`);
+        if (IMPERATIVE.test(heard) || /\b(unlock|open|let me in)\b/i.test(heard)) return toolUse("unlock_front_door", { channel: "agent", reason: heard.slice(0, 200) }, `The visitor says: ${heard}`);
         return toolUse("notify_household", { message: `Someone is at the front door: ${summary}`, channels: ["tv", "caregiver_phone"] });
       }
       if (last.name === "unlock_front_door") return reply(last.result?.allow ? "I opened the front door for the delivery." : unlockReply(last.result));

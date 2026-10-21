@@ -36,6 +36,14 @@ export interface Config {
   allowedHosts: string[];
   /** How long a phone whose live stream dropped still counts as reachable while it reconnects. */
   approverGraceMs: number;
+  /** Express "trust proxy" (e.g. "1" behind one load balancer), so rate limits see the visitor's address. Unset = trust none. */
+  trustProxy: string | null;
+  /** Where "/" goes: the console locally, the break-in page on a public deployment. */
+  homePage: "/console" | "/break-it";
+  /** The public address of the break-in page, for its QR code. Unset = derived from the request. */
+  publicUrl: string | null;
+  /** The live "try to break in" page and its API. */
+  breakIt: { enabled: boolean; perAddressPerHour: number; perHour: number; concurrency: number; timeoutMs: number };
 }
 
 export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -113,5 +121,15 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, opts: { dataDir
     sessionMax: Number(env.SESSION_MAX ?? 200),
     allowedHosts: (env.ALLOWED_HOSTS ?? "").split(",").map((x) => x.trim().toLowerCase()).filter(Boolean),
     approverGraceMs: Number(env.APPROVER_GRACE_MS ?? 5000),
+    trustProxy: env.TRUST_PROXY?.trim() || null,
+    homePage: env.HOME_PAGE === "/break-it" ? "/break-it" : "/console",
+    publicUrl: env.PUBLIC_URL?.trim() || null,
+    breakIt: {
+      enabled: (env.BREAK_IT ?? "true") === "true",
+      perAddressPerHour: Number(env.BREAK_IT_PER_ADDRESS_PER_HOUR ?? 10),
+      perHour: Number(env.BREAK_IT_PER_HOUR ?? 600),
+      concurrency: Number(env.BREAK_IT_CONCURRENCY ?? 4),
+      timeoutMs: Number(env.BREAK_IT_TIMEOUT_MS ?? 90_000),
+    },
   };
 }

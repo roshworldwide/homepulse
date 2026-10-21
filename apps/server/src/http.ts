@@ -42,13 +42,21 @@ export function isLoopback(addr: string | undefined): boolean {
   return !!addr && (addr === "127.0.0.1" || addr === "::1" || addr === "::ffff:127.0.0.1");
 }
 
-/** Host names this server answers to when it listens beyond loopback. Interface addresses are re-read every 10 s. */
+/**
+ * Host names this server answers to when it listens beyond loopback. Interface addresses are re-read every 10 s.
+ * An entry starting with a dot matches that domain's subdomains, for hosts whose name is assigned at
+ * deploy time (".ecs.us-east-1.on.aws" for an Amazon ECS Express Mode endpoint). Use it only for
+ * domains whose names nobody else can point at your server.
+ */
 export function hostAllowList(extra: string[]): (hostname: string) => boolean {
-  const fixed = new Set(["localhost", "127.0.0.1", "[::1]", os.hostname().toLowerCase(), ...extra.map((h) => h.toLowerCase())]);
+  const lower = extra.map((h) => h.toLowerCase());
+  const fixed = new Set(["localhost", "127.0.0.1", "[::1]", os.hostname().toLowerCase(), ...lower.filter((h) => !h.startsWith("."))]);
+  const suffixes = lower.filter((h) => h.startsWith(".") && h.split(".").filter(Boolean).length >= 2);
   let ips = new Set<string>();
   let at = 0;
   return (hostname: string) => {
     if (fixed.has(hostname)) return true;
+    if (suffixes.some((sfx) => hostname.endsWith(sfx) && hostname.length > sfx.length)) return true;
     if (Date.now() - at > 10_000) {
       ips = new Set(
         Object.values(os.networkInterfaces())
@@ -81,6 +89,9 @@ export function rateLimiter(max: number, windowMs: number) {
 
 export function createApp(hp: HomePulse, ext: Extension[] = []) {
   const app = express();
+  // Behind a load balancer, rate limits must see the visitor's address (X-Forwarded-For), not the balancer's.
+  // The loopback check for the console still uses the socket address, which a header cannot change.
+  if (hp.config.trustProxy) app.set("trust proxy", /^\d+$/.test(hp.config.trustProxy) ? Number(hp.config.trustProxy) : hp.config.trustProxy);
   app.disable("x-powered-by");
   const sessions = new Map<string, Session>();
   const tokenBufs = ROLES.map((r) => [r, Buffer.from(hp.config.tokens[r], "utf8")] as const);
@@ -319,7 +330,7 @@ export function createApp(hp: HomePulse, ext: Extension[] = []) {
   /** The simulated keypad at the door. A device, not an agent: anyone can type, the guard decides. */
   const keypadLimit = rateLimiter(20, 60_000);
   app.post("/api/keypad", json, async (req, res) => {
-    if (!keypadLimit(req.socket.remoteAddress ?? "?")) return res.status(429).set("Retry-After", "60").json({ error: "Too many attempts from this address" });
+    if (!keypadLimit(req.ip ?? req.socket.remoteAddress ?? "?")) return res.status(429).set("Retry-After", "60").json({ error: "Too many attempts from this address" });
     const door = req.body?.door === "parcel_box" ? "parcel_box" : "front";
     const code = String(req.body?.code ?? "");
     if (!/^\d{6}$/.test(code)) return res.status(400).json({ error: "Codes are 6 digits." });
@@ -363,6 +374,7 @@ export function createApp(hp: HomePulse, ext: Extension[] = []) {
 
   // 6. The built console, when present.
   const dist = path.join(REPO_ROOT, "apps/console/dist");
+  if (hp.config.homePage !== "/console") app.get("/", (_req, res) => res.redirect(302, hp.config.homePage));
   if (fs.existsSync(dist)) {
     app.use(express.static(dist));
     app.get(/^\/(console|alexa|break-it)?$/, (_req, res) => res.sendFile(path.join(dist, "index.html")));

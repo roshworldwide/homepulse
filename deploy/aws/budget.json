@@ -1,0 +1,6 @@
+{
+  "BudgetName": "homepulse-break-it-daily",
+  "BudgetLimit": { "Amount": "__AMOUNT__", "Unit": "USD" },
+  "BudgetType": "COST",
+  "TimeUnit": "DAILY"
+}
