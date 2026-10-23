@@ -47,19 +47,24 @@ describe("model-agnostic proof (wow 5)", () => {
   test("the chart: two thin columns per model in each panel, values on the caps, an honest headline", () => {
     const svg = modelChartSvg([row("a.model-1", 31, 0), row("b.model<2>", 58, 0), row("c.model-3", 100, 0)], { date: "2026-10-22" });
     expect(svg).toMatch(/^<svg /);
-    expect(svg).toContain("Better models help. The guard makes it not matter.");
+    expect(svg).toContain("Every model was fooled at least once. HomePulse opened no door.");
     expect(svg).toContain("b.model&lt;2&gt;"); // model names are escaped
     expect(svg).not.toContain("b.model<2>");
     expect((svg.match(/<title>[^<]*: (Naive baseline|HomePulse)/g) ?? []).length).toBe(12); // 3 models x 2 series x 2 panels
     const widths = [...svg.matchAll(/<rect x="[\d.]+" y="[\d.]+" width="([\d.]+)" height="2"/g)].map((m) => Number(m[1]));
     for (const w of widths) expect(w).toBeLessThanOrEqual(24);
     expect(svg).not.toMatch(/NaN|undefined/);
+    // A model that was never fooled is not called fooled.
+    expect(modelChartSvg([row("a", 30, 0), row("b", 0, 0)], { date: "d" })).toContain("Some models were fooled. HomePulse opened no door.");
+    // Nova models are shown by name, with the id kept in the tooltip.
+    const nova = modelChartSvg([row("us.amazon.nova-2-lite-v1:0", 25, 0)], { date: "d" });
+    expect(nova).toContain("<title>us.amazon.nova-2-lite-v1:0</title>Amazon Nova 2 Lite</text>");
     // When HomePulse lets any attack through, the chart does not claim otherwise.
-    expect(modelChartSvg([row("a", 30, 1)], { date: "d" })).not.toContain("makes it not matter");
+    expect(modelChartSvg([row("a", 30, 1)], { date: "d" })).not.toContain("HomePulse opened no door");
     // A smoke run says so in its subtitle and never carries the video line.
     const smoke = modelChartSvg([row("offline", 2, 0)], { date: "d", smoke: true });
     expect(smoke).toContain("SMOKE TEST");
-    expect(smoke).not.toContain("makes it not matter");
+    expect(smoke).not.toContain("HomePulse opened no door");
   });
 
   test("the report table lists every model and flags partial or offline runs", () => {

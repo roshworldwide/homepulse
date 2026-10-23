@@ -6,6 +6,13 @@
  * aura's periwinkle, on the dark canvas #141417. Validated with the dataviz
  * palette checks: lightness band, chroma, CVD 25.4 (protan), normal 25.8, contrast.
  */
+import { bedrockLabel } from "../../apps/server/src/models/bedrock.js";
+
+/** Nova models by name ("Amazon Nova 2 Lite"), as on the console; any other id as it is. The id stays in the tooltip. */
+const modelName = (id: string) => {
+  const label = bedrockLabel(id);
+  return label.endsWith(" on Bedrock") ? label.slice(0, -" on Bedrock".length) : id;
+};
 
 export interface ModelRow {
   model: string;
@@ -80,7 +87,8 @@ function panel(opts: {
       out.push(column(xs[j], barW, y(v), base, SERIES[j].color, `${r.model}: ${label}, ${v} of ${opts.of(r)}`));
       out.push(`<text x="${xs[j] + barW / 2}" y="${y(v) - 6}" font-size="12" font-weight="600" fill="${INK}" text-anchor="middle" style="font-variant-numeric: tabular-nums">${v}</text>`);
     });
-    const name = r.model.length > 34 ? r.model.slice(0, 33) + "…" : r.model;
+    const shown = modelName(r.model);
+    const name = shown.length > 34 ? shown.slice(0, 33) + "…" : shown;
     out.push(`<text x="${cx}" y="${base + 18}" font-size="12" fill="${INK2}" text-anchor="middle"><title>${esc(r.model)}</title>${esc(name)}</text>`);
     if (opts.showErrors && r.errors) out.push(`<text x="${cx}" y="${base + 33}" font-size="11" fill="${MUTED}" text-anchor="middle">${r.errors} case error${r.errors === 1 ? "" : "s"}</text>`);
   });
@@ -109,10 +117,14 @@ export function modelChartSvg(rows: ModelRow[], opts: { date: string; smoke?: bo
   const top = panel({ rows, x0: 24, y0: 150, width: W - 48, height: 240, max: a.top, ticks: a.ticks, title: `Attacks that opened the door (of ${attacks}, lower is better)`, value: (r, s) => (s === "naive" ? r.naive_unlocked : r.homepulse_unlocked), of: (r) => r.attacks, showErrors: true });
   const bottom = panel({ rows, x0: 24, y0: 490, width: W - 48, height: 110, max: l.top, ticks: l.ticks, title: `Legitimate visitors wrongly refused (of ${legit}, lower is better)`, value: (r, s) => (s === "naive" ? r.naive_refused : r.homepulse_refused), of: (r) => r.legit, showErrors: false });
   const H = 672;
-  // The headline is only the video's line when the data says so.
-  const headline = !opts.smoke && rows.length > 0 && rows.every((r) => r.homepulse_unlocked === 0) && rows.some((r) => r.naive_unlocked > 0)
-    ? "Better models help. The guard makes it not matter."
-    : "Attacks that opened the door, by model";
+  // The headline is only the video's line when the data says so, and it ranks no model above another.
+  const held = !opts.smoke && rows.length > 0 && rows.every((r) => r.homepulse_unlocked === 0);
+  const headline =
+    held && rows.every((r) => r.naive_unlocked > 0)
+      ? "Every model was fooled at least once. HomePulse opened no door."
+      : held && rows.some((r) => r.naive_unlocked > 0)
+        ? "Some models were fooled. HomePulse opened no door."
+        : "Attacks that opened the door, by model";
   const desc = rows.map((r) => `${r.model}: naive baseline opened the door for ${r.naive_unlocked} of ${r.attacks} attacks, HomePulse for ${r.homepulse_unlocked}; legitimate visits refused ${r.naive_refused} and ${r.homepulse_refused} of ${r.legit}.`).join(" ");
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-labelledby="t d" font-family="${FONT}">
 <title id="t">${esc(headline)}</title>
