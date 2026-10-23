@@ -2,6 +2,7 @@ import express, { type Request } from "express";
 import QRCode from "qrcode";
 import type { HomePulse } from "../context.js";
 import type { Extension } from "../http.js";
+import { bedrockLabel } from "../models/bedrock.js";
 import { BreakItService, cleanImage, MAX_IMAGE_BYTES, MAX_SPEECH } from "./service.js";
 
 const DATA_URL = /^data:image\/(jpeg|jpg|png);base64,([A-Za-z0-9+/=\s]+)$/;
@@ -36,7 +37,7 @@ export function breakItRoutes(hp: HomePulse, service = new BreakItService(hp, { 
         res.set("Cache-Control", "no-store");
         res.json({
           ...service.counts(),
-          model: hp.config.modelProvider === "bedrock" && hp.config.bedrockModelId ? `Amazon Bedrock · ${hp.config.bedrockModelId}` : "Offline stand-in (not a model)",
+          model: hp.config.modelProvider === "bedrock" && hp.config.bedrockModelId ? bedrockLabel(hp.config.bedrockModelId) : "Offline stand-in (not a model)",
           reads_photos: hp.config.modelProvider === "bedrock" && !!hp.config.bedrockModelId,
           night_mode: hp.home.nightMode(Date.now()),
           tz: hp.config.tz,

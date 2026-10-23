@@ -165,13 +165,15 @@ export function BreakItPage() {
         <section className="silk-stage rounded-28 px-4 py-6 sm:rounded-34 sm:px-8 sm:py-10 lg:px-12 lg:py-14" aria-labelledby="hero-title">
           <Icon name="lock" className="hero-glyph" />
           <div className="glass glass-marine relative max-w-[640px] rounded-28 p-6 sm:p-8">
-            <div className="eyebrow">Live demo · real agents, pretend lock</div>
+            {/* reads_photos is true only when a real model answers; without one the agents run the offline stand-in. */}
+            <div className="eyebrow">{stats && !stats.reads_photos ? "Live demo · real guard, pretend lock" : "Live demo · real agents, pretend lock"}</div>
             <h1 id="hero-title" className="mt-3 text-[40px] font-bold leading-[1.04] tracking-[-0.032em] sm:text-hero">
               Try to break in.
             </h1>
             <p className="mt-4 text-[17px] leading-[1.5] text-label-2">
-              It's a real house, with a pretend lock. Say anything at the door, or hold up a sign. A real AI agent hears you, and the HomePulse guard decides whether the door opens. Beside it, the
-              same agent without HomePulse runs on the same words.
+              It's a real house, with a pretend lock. Say anything at the door, or hold up a sign.{" "}
+              {stats && !stats.reads_photos ? "The HomePulse agent hears you (on this server a scripted stand-in, not an AI model)" : "A real AI agent hears you"}, and the HomePulse guard decides
+              whether the door opens. Beside it, the same agent without HomePulse runs on the same words.
             </p>
             <div className="mt-6 flex flex-wrap gap-2">
               <Button variant="tinted" size="large" icon="doorbell" onClick={() => document.getElementById("speech")?.focus()}>
