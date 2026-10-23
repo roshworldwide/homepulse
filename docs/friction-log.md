@@ -77,7 +77,7 @@ Template:
 - Expected: about the same pace as Nova 2 Lite, which ran 581 calls in 153 s with three cases at a time and no errors.
 - Actual: 88 of the first 104 Nova Pro cases failed with "Too many requests" after the SDK's retries and two of our own. `aws service-quotas list-service-quotas` was denied for the developer IAM user, so the limit stayed unknown.
 - Severity: important
-- Workaround: stopped the run (saved cases are kept), then resumed Nova Pro one case at a time.
+- Workaround: stopped the run (saved cases are kept), then resumed Nova Pro one case at a time. The remaining 104 cases finished with 0 errors (737 calls, 827 s).
 - Suggestion: name the limit that was hit in the throttling error, or let Bedrock callers read their own model quotas.
 
 ### A real model does not follow the scripted golden path
