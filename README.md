@@ -155,7 +155,7 @@ Only measured numbers appear here.
 | 3 | **One-word lockdown.** "Alexa, lock everything down" works at once; turning it off needs a tap on a phone. | `/alexa` |
 | 4 | **What-if replay.** The decision card's Why? panel shows the 14 inputs as switches; flipping one re-runs the same `decide()` in the browser. The timeline also has a time-travel slider that replays the log as known at each moment. | `/console` |
 | 5 | **Model-agnostic proof.** `npm run holdout:models -- --models a,b,c` runs the agent-level Holdout for the naive baseline and HomePulse on each Bedrock model and draws `docs/model-agnostic.svg`. **No numbers yet:** it needs Bedrock access. | [harness/README.md](harness/README.md) |
-| 6 | **Live "try to break in".** `/break-it`: type what a visitor says or upload a sign photo; the real agent and guard answer beside the naive baseline, with a public counter and a QR code. Each attempt gets its own fresh in-memory house, nothing personal is stored, and there are limits per address, per hour and at once. Ready to deploy to Amazon ECS Express Mode with a Bedrock-only task role and a budget alarm. **Not deployed yet:** that needs your AWS account. | `/break-it`; [deploy/aws](deploy/aws) |
+| 6 | **Live "try to break in".** `/break-it`: type what a visitor says or upload a sign photo; the real agent and guard answer beside the naive baseline, with a public counter and a QR code. Each attempt gets its own fresh in-memory house, nothing personal is stored, and there are limits per address, per hour and at once. **Live at [homepulse-iota.vercel.app](https://homepulse-iota.vercel.app)** (Vercel, one function, `npm run build:vercel`) on the offline stand-in, not a model: the page says so, and with no model behind it the attempt limits are counted per running instance. For Bedrock behind it, the Amazon ECS Express Mode script (a Bedrock-only task role and a budget alarm) is written but not run. | `/break-it`; [deploy/aws](deploy/aws) |
 | 7 | **Guard any MCP server.** `mcp-streamable-guard proxy --upstream <url> --policy policy.yaml` puts the guard in front of an unchanged server. The "SmartLock Co" example is protected by a 10-line policy. | `npm run demo:proxy`; [roshworldwide/mcp-streamable-guard](https://github.com/roshworldwide/mcp-streamable-guard) |
 
 ## Golden-path scenarios
@@ -219,6 +219,7 @@ Dockerfile       the public break-in image
 | `npm run holdout -- --level guard` | Attack suite against the guard (CI) |
 | `npm run holdout -- --level agent` | Attack suite through both agents (needs Bedrock) |
 | `npm run holdout:models -- --models a,b,c` | The agent-level suite across models, with the chart (needs Bedrock) |
+| `npm run build:vercel` | Build the public break-in page as one Vercel function (`.vercel/output`); Vercel runs it on deploy |
 | `npm run demo:proxy` | The guard proxy in front of SmartLock Co, end to end |
 | `npm run guard:proxy -- --upstream <url> --policy <file>` | Run the proxy in front of any MCP server |
 | `npm run bench:guard` | Guard latency, median and p95 |

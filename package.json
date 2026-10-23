@@ -36,13 +36,15 @@
     "build": "npm run build -w mcp-streamable-guard && npm run build -w @homepulse/console",
     "bench:guard": "tsx --conditions=homepulse-source apps/server/src/bench/guard-bench.ts",
     "stress:load": "tsx --conditions=homepulse-source apps/server/src/bench/load-test.ts",
-    "stress": "STRESS_RUNS=2000 FUZZ_RUNS=600 vitest run apps/server/test/stress && npm run stress:load"
+    "stress": "STRESS_RUNS=2000 FUZZ_RUNS=600 vitest run apps/server/test/stress && npm run stress:load",
+    "build:vercel": "npm run build && node scripts/vercel-build.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.10.2",
     "@playwright/test": "1.56.0",
     "@types/node": "^22.20.5",
     "concurrently": "^10.0.6",
+    "esbuild": "^0.28.2",
     "fast-check": "^4.10.2",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",

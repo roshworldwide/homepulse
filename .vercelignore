@@ -1,0 +1,15 @@
+# The Vercel CLI uploads this folder as it is on disk. Keep local tokens, secrets and builds out.
+.env
+.env.*
+!.env.example
+data/
+node_modules/
+dist/
+coverage/
+harness/out/
+e2e-results/
+e2e-report/
+*.db
+*.db-*
+*.log
+.DS_Store
