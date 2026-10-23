@@ -43,6 +43,8 @@ export default defineConfig({
       CONSOLE_EXPOSE_TOKENS: "true",
       APPROVAL_TIMEOUT_MS: "30000",
       MODEL_PROVIDER: "offline",
+      // A folder that is never created: the tests check the offline stand-in's golden paths, not recorded Nova replies.
+      HOMEPULSE_FIXTURES_DIR: "e2e-results/no-fixtures",
     },
   },
 });

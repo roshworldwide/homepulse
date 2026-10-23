@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { REPO_ROOT } from "../config.js";
+import { bedrockLabel } from "./bedrock.js";
 import { DraftSchema, VisitorSchema, type DraftContext, type ImageInput, type ModelInfo, type ModelProvider } from "./types.js";
 
 export const FIXTURES_DIR = path.join(REPO_ROOT, "apps/server/src/demo/fixtures");
@@ -25,7 +26,8 @@ export const sha8 = (s: string | Buffer) => createHash("sha256").update(s).diges
  * `npm run demo:record` from live Bedrock calls, never by hand.
  */
 export class FixtureStore {
-  constructor(private dir = FIXTURES_DIR) {}
+  // HOMEPULSE_FIXTURES_DIR points elsewhere, e.g. at an empty folder for tests of the offline stand-in's golden path.
+  constructor(private dir = process.env.HOMEPULSE_FIXTURES_DIR || FIXTURES_DIR) {}
 
   private file(scenario: string, kind: string, key: string) {
     return path.join(this.dir, scenario, `${kind}-${key}.json`);
@@ -54,7 +56,9 @@ export class FixtureStore {
 }
 
 export const visionKey = (img: ImageInput) => sha8(img.bytes);
-export const ruleKey = (utterance: string, ctx: DraftContext) => sha8(`${utterance}|${ctx.now_iso}|${ctx.tz}`);
+// To the minute: the scenario clock ticks on after each step, so a live recording reaches the draft a
+// second or two later than its replay does. Rules are drafted to the minute anyway.
+export const ruleKey = (utterance: string, ctx: DraftContext) => sha8(`${utterance}|${ctx.now_iso.slice(0, 16)}|${ctx.tz}`);
 
 /**
  * DEMO_MODE provider: replay a recorded real output when one exists for this
@@ -71,12 +75,13 @@ export class FixtureProvider implements ModelProvider {
   ) {}
 
   info(): ModelInfo {
-    if (this.live) return { ...this.live.info(), label: `${this.live.info().label} (recorded fixtures when present)` };
+    // The model's own name; each replayed output says it was recorded (replayInfo).
+    if (this.live) return this.live.info();
     return { provider: "fixture", model_id: "recorded", label: this.store.count() ? "Recorded Bedrock outputs (offline stand-in where none)" : "Offline stand-in (not a model) · no fixtures recorded yet" };
   }
 
   private replayInfo(fx: Fixture): ModelInfo {
-    return { provider: "fixture", model_id: fx.model_id, label: `Recorded ${fx.model_id} output (${fx.recorded_at.slice(0, 10)})` };
+    return { provider: "fixture", model_id: fx.model_id, label: `${bedrockLabel(fx.model_id)} · recorded ${fx.recorded_at.slice(0, 10)}` };
   }
 
   async describeVisitor(image: ImageInput) {

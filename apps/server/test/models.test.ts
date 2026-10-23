@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import type { ConverseCommand, ConverseCommandOutput } from "@aws-sdk/client-bedrock-runtime";
 import { describe, expect, test } from "vitest";
-import { BedrockProvider, RULE_SYSTEM, VISION_SYSTEM, type ConverseClient } from "../src/models/bedrock.js";
+import { BedrockProvider, RULE_SYSTEM, VISION_SYSTEM, bedrockLabel, type ConverseClient } from "../src/models/bedrock.js";
 import { FixtureProvider, FixtureStore, ruleKey, visionKey } from "../src/models/fixtures.js";
 import { OfflineProvider, offlineDraft } from "../src/models/offline.js";
 
@@ -70,6 +70,13 @@ describe("Bedrock provider (Converse API, forced tool calls)", () => {
   });
 });
 
+test("on-screen model names: Nova models by name, anything else by id", () => {
+  expect(bedrockLabel("us.amazon.nova-2-lite-v1:0")).toBe("Amazon Nova 2 Lite on Bedrock");
+  expect(bedrockLabel("us.amazon.nova-pro-v1:0")).toBe("Amazon Nova Pro on Bedrock");
+  expect(bedrockLabel("amazon.nova-lite-v1:0")).toBe("Amazon Nova Lite on Bedrock");
+  expect(bedrockLabel("some.other-model")).toBe("Amazon Bedrock · some.other-model");
+});
+
 describe("fixtures (DEMO_MODE)", () => {
   test("record from a live call, then replay without the live provider", async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fx-"));
@@ -82,7 +89,7 @@ describe("fixtures (DEMO_MODE)", () => {
     const replay = new FixtureProvider(store, () => "sign", null, new OfflineProvider(), false);
     const r = await replay.describeVisitor(img);
     expect(r.info.provider).toBe("fixture");
-    expect(r.info.label).toMatch(/^Recorded rec-model output/);
+    expect(r.info.label).toMatch(/^Amazon Bedrock · rec-model · recorded \d{4}-\d{2}-\d{2}$/);
     expect(r.output.visible_text).toEqual([SIGN]);
   });
 
@@ -93,6 +100,12 @@ describe("fixtures (DEMO_MODE)", () => {
     const r = await p.draftRule("Let Nurse Sarah in today between 2 and 3", ctx);
     expect(r.info.provider).toBe("offline");
     expect(ruleKey("a", ctx)).not.toBe(ruleKey("b", ctx));
+  });
+
+  test("a rule recorded a second later than its replay still matches; a minute later does not", () => {
+    const ctx = { now_iso: "2026-10-22T13:40:00-07:00", tz: "America/Los_Angeles", weekday: "Thursday" };
+    expect(ruleKey("a", { ...ctx, now_iso: "2026-10-22T13:40:01-07:00" })).toBe(ruleKey("a", ctx));
+    expect(ruleKey("a", { ...ctx, now_iso: "2026-10-22T13:41:00-07:00" })).not.toBe(ruleKey("a", ctx));
   });
 });
 

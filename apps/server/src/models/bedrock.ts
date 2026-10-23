@@ -69,6 +69,20 @@ export async function forcedToolCall(client: ConverseClient, input: Omit<Convers
   return use.input;
 }
 
+/** On-screen names for the Bedrock models HomePulse has been run with. Other ids are shown as they are. */
+const MODEL_NAMES: [RegExp, string][] = [
+  [/amazon\.nova-2-lite/, "Amazon Nova 2 Lite"],
+  [/amazon\.nova-pro/, "Amazon Nova Pro"],
+  [/amazon\.nova-lite/, "Amazon Nova Lite"],
+  [/amazon\.nova-micro/, "Amazon Nova Micro"],
+];
+
+/** "us.amazon.nova-2-lite-v1:0" -> "Amazon Nova 2 Lite on Bedrock"; an unknown id -> "Amazon Bedrock · <id>". */
+export function bedrockLabel(modelId: string): string {
+  const name = MODEL_NAMES.find(([re]) => re.test(modelId))?.[1];
+  return name ? `${name} on Bedrock` : `Amazon Bedrock · ${modelId}`;
+}
+
 export class BedrockProvider implements ModelProvider {
   private client: ConverseClient;
   constructor(
@@ -81,7 +95,7 @@ export class BedrockProvider implements ModelProvider {
   }
 
   info(): ModelInfo {
-    return { provider: "bedrock", model_id: this.modelId, label: `Amazon Bedrock · ${this.modelId}` };
+    return { provider: "bedrock", model_id: this.modelId, label: bedrockLabel(this.modelId) };
   }
 
   async describeVisitor(image: ImageInput) {

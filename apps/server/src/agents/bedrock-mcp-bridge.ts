@@ -2,6 +2,7 @@ import { BedrockRuntimeClient, ConverseCommand, type Tool } from "@aws-sdk/clien
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
+import { bedrockLabel } from "../models/bedrock.js";
 import type { ModelInfo } from "../models/types.js";
 import type { AgentModel, AgentStep, ContentBlock, ConverseReply, ConverseRequest, Message, ToolCallResult, ToolDef, ToolExecutor } from "./types.js";
 
@@ -17,7 +18,7 @@ export class BedrockAgentModel implements AgentModel {
     this.client = new BedrockRuntimeClient({ region });
   }
   info(): ModelInfo {
-    return { provider: "bedrock", model_id: this.modelId, label: `Amazon Bedrock · ${this.modelId}` };
+    return { provider: "bedrock", model_id: this.modelId, label: bedrockLabel(this.modelId) };
   }
   async converse(req: ConverseRequest): Promise<ConverseReply> {
     const tools: Tool[] = req.tools.map((t) => ({ toolSpec: { name: t.name, description: t.description, inputSchema: { json: cleanSchema(t.inputSchema) as never } } }));

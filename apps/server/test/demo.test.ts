@@ -1,10 +1,21 @@
-import { afterEach, describe, expect, test } from "vitest";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { afterAll, afterEach, beforeAll, describe, expect, test } from "vitest";
 import { runScenario } from "../src/demo/scenarios.js";
 import { explain } from "../src/tools/explain_decision.js";
 import { connect, startServer, structured, type TestServer } from "./helpers.js";
 
 let ts: TestServer;
 afterEach(async () => ts?.close());
+
+// These are the offline stand-in's golden paths, so no recorded model output may replay here.
+beforeAll(() => {
+  process.env.HOMEPULSE_FIXTURES_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "no-fixtures-"));
+});
+afterAll(() => {
+  delete process.env.HOMEPULSE_FIXTURES_DIR;
+});
 
 const yesPhone = (p: unknown) => {
   const field = Object.keys((p as { requestedSchema: { properties: object } }).requestedSchema.properties)[0];
