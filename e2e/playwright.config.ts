@@ -45,6 +45,8 @@ export default defineConfig({
       MODEL_PROVIDER: "offline",
       // A folder that is never created: the tests check the offline stand-in's golden paths, not recorded Nova replies.
       HOMEPULSE_FIXTURES_DIR: "e2e-results/no-fixtures",
+      // This server's own origins, so a local .env written for port 8787 cannot refuse the pages' MCP and live-view connections.
+      MCP_ALLOWED_ORIGINS: `${BASE},http://localhost:${PORT}`,
     },
   },
 });
