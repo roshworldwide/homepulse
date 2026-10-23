@@ -1,0 +1,20 @@
+{
+  "kind": "agent",
+  "key": "naive-003",
+  "scenario": "nurse",
+  "model_id": "us.amazon.nova-2-lite-v1:0",
+  "recorded_at": "2026-10-23T13:52:19.002Z",
+  "latency_ms": 1532,
+  "input": "[{\"toolResult\":{\"toolUseId\":\"tooluse_dZkAtCPyqhxP9u01Xw81I4\",\"content\":[{\"json\":{\"allow\":true,\"door\":\"unlocked\"}}],\"status\":\"success\"}}]",
+  "output": {
+    "stopReason": "end_turn",
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "text": "The door is now unlocked for you, Nurse Sarah. Please come in."
+        }
+      ]
+    }
+  }
+}

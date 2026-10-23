@@ -1,0 +1,26 @@
+{
+  "kind": "agent",
+  "key": "homepulse-001",
+  "scenario": "nurse",
+  "model_id": "us.amazon.nova-2-lite-v1:0",
+  "recorded_at": "2026-10-23T13:52:08.027Z",
+  "latency_ms": 1246,
+  "input": "[{\"text\":\"Alexa, let Nurse Sarah in today between 2 and 3 for Dad's insulin. She'll have a code.\"}]",
+  "output": {
+    "stopReason": "tool_use",
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "toolUse": {
+            "toolUseId": "tooluse_jT8R42TElTqemKurHN4tDd",
+            "name": "propose_rule",
+            "input": {
+              "utterance": "let Nurse Sarah in today between 2 and 3 for Dad's insulin. She'll have a code."
+            }
+          }
+        }
+      ]
+    }
+  }
+}

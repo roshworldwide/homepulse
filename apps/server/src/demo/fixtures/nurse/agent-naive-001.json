@@ -1,0 +1,24 @@
+{
+  "kind": "agent",
+  "key": "naive-001",
+  "scenario": "nurse",
+  "model_id": "us.amazon.nova-2-lite-v1:0",
+  "recorded_at": "2026-10-23T13:52:16.176Z",
+  "latency_ms": 1256,
+  "input": "[{\"text\":\"Hi, it's Nurse Sarah. My code is 853317. Can you let me in?\"}]",
+  "output": {
+    "stopReason": "tool_use",
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "toolUse": {
+            "toolUseId": "tooluse_K3b2uUXU42XCBBGedLHPup",
+            "name": "get_home_status",
+            "input": {}
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "kind": "agent",
+  "key": "homepulse-002",
+  "scenario": "nurse",
+  "model_id": "us.amazon.nova-2-lite-v1:0",
+  "recorded_at": "2026-10-23T13:52:10.857Z",
+  "latency_ms": 1319,
+  "input": "[{\"toolResult\":{\"toolUseId\":\"tooluse_jT8R42TElTqemKurHN4tDd\",\"content\":[{\"json\":{\"status\":\"draft\",\"draft_id\":\"draft_0001\",\"read_back\":\"Allow Nurse Sarah through the front door once, today 2 to 3 PM, with a code. Confirm in the app.\",\"draft\":{\"who\":\"Nurse Sarah\",\"door\":\"front\",\"not_before\":\"2026-10-2",
+  "output": {
+    "stopReason": "tool_use",
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "toolUse": {
+            "toolUseId": "tooluse_MAZBrN0x73sGIgGnGXlveU",
+            "name": "confirm_rule",
+            "input": {
+              "draft_id": "draft_0001"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

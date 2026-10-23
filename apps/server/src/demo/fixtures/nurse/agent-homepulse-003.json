@@ -1,0 +1,20 @@
+{
+  "kind": "agent",
+  "key": "homepulse-003",
+  "scenario": "nurse",
+  "model_id": "us.amazon.nova-2-lite-v1:0",
+  "recorded_at": "2026-10-23T13:52:13.067Z",
+  "latency_ms": 1382,
+  "input": "[{\"toolResult\":{\"toolUseId\":\"tooluse_MAZBrN0x73sGIgGnGXlveU\",\"content\":[{\"json\":{\"status\":\"confirmed\",\"who\":\"Nurse Sarah\",\"door\":\"front\",\"window\":\"today 2 to 3 PM\",\"valid_at_night\":false,\"confirmed_by\":\"caregiver\",\"code_delivery\":\"shown once on the caregiver's phone\"}}],\"status\":\"success\"}}]",
+  "output": {
+    "stopReason": "end_turn",
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "text": "I’ve set a one-time pass for Nurse Sarah from 2 to 3 PM today for Dad’s insulin. She’ll see the code on your phone."
+        }
+      ]
+    }
+  }
+}
