@@ -21,7 +21,7 @@ import { runAgentCase, type AgentCaseResult } from "./src/agent-level.js";
 import { modelChartSvg, type ModelRow } from "./src/chart.js";
 
 export const OFFLINE = "offline-agent-standin (scripted, NOT A RESULT)";
-const slug = (m: string) => m.replace(/[^A-Za-z0-9._-]+/g, "_").slice(0, 120);
+export const slug = (m: string) => m.replace(/[^A-Za-z0-9._-]+/g, "_").slice(0, 120);
 
 export function summarizeModel(model: string, results: AgentCaseResult[]): ModelRow {
   const attacks = results.filter((r) => r.expect === "block");

@@ -1,6 +1,7 @@
 /**
  * npm run holdout -- --level guard
  * npm run holdout -- --level agent            (needs MODEL_PROVIDER=bedrock and BEDROCK_MODEL_ID)
+ * npm run holdout -- --level agent --concurrency 4   (cases in parallel; an interrupted run resumes, --fresh starts over)
  * npm run holdout -- --level agent --only sign-001,cred-002
  * npm run holdout -- --level agent --allow-offline   (smoke test only; never a reportable result)
  */
@@ -10,9 +11,18 @@ import { parseArgs } from "node:util";
 import { loadDotEnv } from "../apps/server/src/config.js";
 import { HARNESS_DIR, loadCases } from "./src/cases.js";
 import { runGuardLevel, summarize } from "./src/guard-level.js";
-import { agentReport, runAgentCase, type AgentCaseResult } from "./src/agent-level.js";
+import { agentReport } from "./src/agent-level.js";
+import { runModel, slug } from "./models.js";
 
-const { values } = parseArgs({ options: { level: { type: "string", default: "guard" }, only: { type: "string" }, "allow-offline": { type: "boolean", default: false } } });
+const { values } = parseArgs({
+  options: {
+    level: { type: "string", default: "guard" },
+    only: { type: "string" },
+    "allow-offline": { type: "boolean", default: false },
+    concurrency: { type: "string", default: "1" },
+    fresh: { type: "boolean", default: false },
+  },
+});
 loadDotEnv();
 let cases = loadCases();
 if (values.only) {
@@ -37,15 +47,19 @@ if (provider === "offline" && !values["allow-offline"]) {
   process.exit(2);
 }
 const doorCases = cases.filter((c) => c.expect !== "refuse");
-const results: AgentCaseResult[] = [];
-for (const c of doorCases) {
-  const r = await runAgentCase(c, { ...process.env, MODEL_PROVIDER: provider });
-  results.push(r);
-  console.log(`${r.id.padEnd(14)} naive ${r.naive_opened ? "OPENED" : "closed"}  homepulse ${r.homepulse_opened ? "OPENED" : "closed"}${r.homepulse_attempted_unlock ? " (agent tried)" : ""}${r.error ? "  ERROR " + r.error : ""}`);
-}
 const model = provider === "bedrock" ? process.env.BEDROCK_MODEL_ID! : "offline-agent-standin (scripted, NOT A RESULT)";
+const reportable = provider === "bedrock" && !values.only;
+// Each case is saved as it finishes, in the file holdout:models keeps for this model, so an
+// interrupted run resumes and the model chart reuses these results instead of paying for them twice.
+const results = await runModel(model, doorCases, {
+  file: reportable ? path.join(HARNESS_DIR, "models", `${slug(model)}.json`) : path.join(HARNESS_DIR, "out", "agent-smoke.json"),
+  fresh: !reportable || values.fresh === true,
+  concurrency: Number(values.concurrency) || 1,
+  env: { ...process.env, MODEL_PROVIDER: provider },
+  log: console.log,
+});
 const report = agentReport(results, model, provider);
-const out = provider === "bedrock" && !values.only ? path.join(HARNESS_DIR, "report.md") : path.join(HARNESS_DIR, "out", "report-smoke.md");
+const out = reportable ? path.join(HARNESS_DIR, "report.md") : path.join(HARNESS_DIR, "out", "report-smoke.md");
 fs.mkdirSync(path.dirname(out), { recursive: true });
 fs.writeFileSync(out, report);
 fs.writeFileSync(out.replace(/\.md$/, ".json"), JSON.stringify(results, null, 2));
