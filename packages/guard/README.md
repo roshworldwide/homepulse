@@ -4,6 +4,8 @@ A deterministic guard for MCP tools that touch the physical world. Put it in fro
 
 It came out of [HomePulse](https://github.com/roshworldwide/homepulse), an Alexa+ MCP server for family caregivers.
 
+**Standalone repository:** [roshworldwide/mcp-streamable-guard](https://github.com/roshworldwide/mcp-streamable-guard), with its history, tests and CI. This folder is the copy HomePulse builds against.
+
 ## The idea
 
 An agent may ask for anything. The effect only runs when a pure function of 14 yes/no inputs says allow. Every input is read from **server state** (a passes table, approvals, the clock, home mode, an event log), never from the agent's words. Free-text fields such as `reason` are logged and shown, never used to decide.
