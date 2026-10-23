@@ -205,13 +205,19 @@ describe("resource limits", () => {
     const onWarn = (w: Error) => warnings.push(w.name);
     process.on("warning", onWarn);
     const base = ts.hp.bus.listenerCount("event");
-    const acs = await Promise.all(
-      Array.from({ length: 150 }, async () => {
-        const ac = new AbortController();
-        const r = await fetch(`${ts.base}/events`, { signal: ac.signal });
-        return { ac, status: r.status };
-      }),
-    );
+    // All 150 are open at once, but they connect in batches of 50: macOS's default listen backlog
+    // (kern.ipc.somaxconn = 128) resets a burst of 150 connects before the server sees them.
+    const acs: { ac: AbortController; status: number }[] = [];
+    for (let batch = 0; batch < 3; batch++) {
+      const opened = await Promise.all(
+        Array.from({ length: 50 }, async () => {
+          const ac = new AbortController();
+          const r = await fetch(`${ts.base}/events`, { signal: ac.signal });
+          return { ac, status: r.status };
+        }),
+      );
+      acs.push(...opened);
+    }
     expect(acs.filter((a) => a.status === 200).length).toBeGreaterThan(0);
     for (const a of acs) a.ac.abort();
     await sleep(300);
