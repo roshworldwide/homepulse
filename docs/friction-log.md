@@ -52,3 +52,57 @@ Template:
 - Severity: important
 - Workaround: deploy with `aws ecs create-express-gateway-service` (one call gives a Fargate service, a load balancer and an HTTPS endpoint). The endpoint's host name is assigned at creation, so the server accepts a `.ecs.<region>.on.aws` suffix in its Host allow-list. See `deploy/aws`.
 - Suggestion: a banner on older App Runner tutorials and samples, and an Express Mode equivalent of App Runner's "service URL" field in the create response.
+
+### The default AWS profile's keys were rejected on the night of the live runs
+- Task: first Amazon Bedrock call (23 Oct, the night before submission).
+- Steps taken: `aws sts get-caller-identity` with the default profile.
+- Expected: the IAM user's ARN.
+- Actual: `InvalidClientTokenId: The security token included in the request is invalid`. The only profile had old keys.
+- Severity: minor
+- Workaround: `aws configure` with keys for a dedicated IAM user (`homepulse-dev`). About 5 minutes.
+- Suggestion: none for AWS; we now check credentials first, before any model work.
+
+### An inference profile that is listed is already end of life
+- Task: pick an Amazon Nova model that takes images and supports Converse tool use.
+- Steps taken: `aws bedrock list-inference-profiles --region us-east-1`, then one tiny Converse call (one image, one tool) to each candidate.
+- Expected: every listed profile answers.
+- Actual: `us.amazon.nova-premier-v1:0` is listed, but the call returns `ResourceNotFoundException: This model version has reached the end of its life`. Nova 2 Lite, Nova Pro and Nova Lite answered with `stopReason: tool_use`.
+- Severity: minor
+- Workaround: the one-call check before choosing.
+- Suggestion: hide end-of-life profiles from the listing, or mark them.
+
+### Nova Pro throttled most Holdout cases, and the quota could not be read
+- Task: run the 120-case agent-level Holdout on Nova Pro for the model-agnostic chart.
+- Steps taken: `npm run holdout:models -- --models us.amazon.nova-pro-v1:0,... --concurrency 4`.
+- Expected: about the same pace as Nova 2 Lite, which ran 581 calls in 153 s with three cases at a time and no errors.
+- Actual: 88 of the first 104 Nova Pro cases failed with "Too many requests" after the SDK's retries and two of our own. `aws service-quotas list-service-quotas` was denied for the developer IAM user, so the limit stayed unknown.
+- Severity: important
+- Workaround: stopped the run (saved cases are kept), then resumed Nova Pro one case at a time.
+- Suggestion: name the limit that was hit in the throttling error, or let Bedrock callers read their own model quotas.
+
+### A real model does not follow the scripted golden path
+- Task: record the video's fixtures from Amazon Nova 2 Lite.
+- Steps taken: `npm run demo -- --all` live, then `npm run demo:record`.
+- Expected: the four scenarios as the offline stand-in plays them, where the agents follow the sign and the paramedic so the guard can be seen blocking.
+- Actual: Nova 2 Lite declined the paramedic and the sign on its own, in both agents, without calling the door tool. So no decision card appears, and the caregiver is not asked. In the Holdout it also declined 7 of 20 legitimate owner-approval visits before calling the tool, so nobody was asked to approve them.
+- Severity: important (it changes what the video shows)
+- Workaround: the README shows both, the offline stand-in's path and what the recorded Nova run does, and reports the 7 refusals as measured.
+- Suggestion: for us, tell the agent to hand every door request to the guard (which then asks the family) instead of refusing itself, and re-run the Holdout.
+
+### A recorded rule draft did not replay, because the key included seconds
+- Task: replay the four scenarios from the new fixtures with no Bedrock call.
+- Steps taken: counted Bedrock calls during `npm run demo -- --all` in `DEMO_MODE`.
+- Expected: 0 calls.
+- Actual: 1 call. The scenario clock ticks after each step, so the live recording reached the nurse's rule draft at 13:40:01 and the replay at 13:40:00, and the fixture key included the seconds.
+- Severity: minor
+- Workaround: rule fixtures are keyed to the minute; re-recorded, and the replay now makes 0 calls.
+- Suggestion: none (our bug).
+
+### A 150-connection test failed on macOS only
+- Task: `npm test` on a Mac before pushing.
+- Steps taken: ran the stress suite.
+- Expected: it passes, as it does on Linux CI.
+- Actual: `ECONNRESET` on connect. macOS's default listen backlog (`kern.ipc.somaxconn` = 128) resets a burst of 150 connects.
+- Severity: minor
+- Workaround: the test connects in batches of 50 and still holds all 150 open at once.
+- Suggestion: none (test environment).
