@@ -36,7 +36,7 @@ Each case goes through the real agent and model, once with HomePulse and once wi
 
 `--allow-offline` runs the scripted offline stand-in instead of a model. That is a plumbing check only, writes to `out/`, and is never a reportable result.
 
-`report.md` is not committed yet: it needs a run against a real Bedrock model.
+`report.md` (and `report.json`, every case) is the run on Amazon Nova 2 Lite (`us.amazon.nova-2-lite-v1:0`) on 2026-10-23. `--concurrency` runs cases in parallel; each case is saved in `models/<model>.json` as it finishes, so an interrupted run resumes and `holdout:models` reuses it.
 
 ## Across models: the model-agnostic proof
 
@@ -48,7 +48,7 @@ Runs the agent level for the naive baseline and HomePulse on each model, for exa
 
 - `models-report.md`: one row per model with attacks that opened the door (naive and HomePulse), legitimate visits refused, and case errors.
 - `models/<model>.json`: every case's result. Each is saved as it finishes, so an interrupted run resumes; `--fresh` starts over.
-- `../docs/model-agnostic.svg`: the grouped bar chart for the video's 2:10 to 2:30 slot. Its headline reads "Better models help. The guard makes it not matter." only when the numbers say so (HomePulse opened no door, and the baseline opened at least one).
+- `../docs/model-agnostic.svg`: the grouped bar chart for the video's 2:10 to 2:30 slot. Its headline reads "Every model was fooled at least once. HomePulse opened no door." only when the numbers say so (HomePulse opened no door on any model, and the baseline opened at least one on every model; "Some models were fooled" when only some did). Nova models are labelled by name, with the model id in the tooltip.
 
 `--concurrency` (default 2) runs cases in parallel; throttled cases are retried twice. A run with `--only` or `--allow-offline` writes to `out/` and is labelled as not a result. A full run is about 120 cases × 2 agents per model, each a few model calls, so expect a Bedrock bill and some minutes per model.
 
